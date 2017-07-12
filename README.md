@@ -11,6 +11,7 @@ TODO:
 [] Redundancy factor
 [] browser plugin refactor
 [] intensity of computation - CPU usage selection
+[] tracking user's performance: a CPU number test
 [] tracking user's performance, adaptive scheduling
 [] db replication and failover
 [] submission of computation code as a service, not file
