@@ -9,7 +9,9 @@
   "author": "Vatras",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.15.3"
+    "cors": "^2.8.4",
+    "express": "^4.15.3",
+    "jwt-simple": "^0.5.1"
   },
   "devDependencies": {
     "nodemon": "^1.11.0",
