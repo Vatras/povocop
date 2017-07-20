@@ -11,7 +11,10 @@
   "dependencies": {
     "cors": "^2.8.4",
     "express": "^4.15.3",
-    "jwt-simple": "^0.5.1"
+    "jwt-simple": "^0.5.1",
+    "pg": "6.4.1",
+    "pg-hstore": "^2.3.2",
+    "sequelize": "4.3.0"
   },
   "devDependencies": {
     "nodemon": "^1.11.0",

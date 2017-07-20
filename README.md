@@ -3,11 +3,12 @@ Initial commit of povocop app!
 TODO:
 [x] Write simple express server in ES5
 [x] Write simple frontend - PI calculating
-[] nodejs receive cpu num and sends computation to particular nodes
-[] Make result to get to nodejs
-[] Set up postgres
-[] Make result to persist in database
-[] input data - range or incremental
+[x] nodejs receive cpu num and sends computation to particular nodes
+[x] Make result to get to nodejs
+[x] Set up postgres - column with user, results
+[x] Make result to persist in database
+[] set up endpoints to get results from postgres
+[] input data - range or incremental - also in postgres
 [] input data - computation config
 [] Disconnect events handling
 [] Redundancy factor

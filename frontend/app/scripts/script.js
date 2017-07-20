@@ -32,6 +32,7 @@
     webWorkers.forEach(function (webWorker) {
       webWorker.onmessage = function (e) {
         console.log('onmessage', e)
+        socket.emit('results',e.data)
       }
       webWorker.onerror = function (e) {
         console.log('Error: Line ' + e.lineno + ' in ' + e.filename + ': ' + e.message);

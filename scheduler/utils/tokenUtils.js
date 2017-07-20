@@ -7,12 +7,19 @@ function createToken(socket,numOfCpus){
     const username = socket.handshake.query.povocopusername;
     console.log("username:",username)
     const payload = {
-        numOfCpus: numOfCpus
+        numOfCpus: numOfCpus,
+        points: 0
     };
     if(username && username.length>0){
         payload.povocopusername = username;
     }
     socket.povocopData=payload;
+    const token = jwt.encode(payload, secret);
+    return token;
+}
+function updateToken(socket){
+    const payload = socket.povocopData
+    console.log('updating the token',payload)
     const token = jwt.encode(payload, secret);
     return token;
 }
@@ -28,5 +35,6 @@ function validateToken(povocopToken){
 
 module.exports = {
     createToken : createToken,
+    updateToken : updateToken,
     validateToken : validateToken
 }
