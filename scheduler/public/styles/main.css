@@ -1,0 +1,11 @@
+td{
+    text-align: center;
+}
+
+#inputDataTable_wrapper{
+    margin-top: 30px;
+}
+
+input, button{
+    margin-top:5px;
+}

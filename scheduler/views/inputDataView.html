@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Povocop input data</title>
+
+    <!-- Disable tap highlight on IE -->
+    <meta name="msapplication-tap-highlight" content="no">
+
+    <!-- Web Application Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="/styles/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="/styles/main.css">
+
+    <!-- Add to homescreen for Chrome on Android -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Povocop platform">
+
+    <!-- Add to homescreen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Web Starter Kit">
+
+    <meta name="msapplication-TileColor" content="#2F3BA2">
+
+    <!-- Color the status bar on mobile devices -->
+    <meta name="theme-color" content="#2F3BA2">
+
+    <!-- SEO: If your mobile URL is different from the desktop URL, add a canonical link to the desktop page https://developers.google.com/webmasters/smartphone-sites/feature-phones -->
+    <!--
+    <link rel="canonical" href="http://www.example.com/">
+    -->
+</head>
+<body>
+<!-- Add your site or app content here -->
+<div>
+    <p>Povocop input data:</p>
+    <input id="startRangeInput" type="text" placeholder="range start"></input>
+    <input id="endRangeInput" type="text" placeholder="range end"></input>
+    <br/>
+    <input id="moduloInput" type="text" placeholder="optional modulo"></input>
+    <br/>
+    <button id="generateBtn">Generate data</button>
+    <button id="saveBtn">Save data</button>
+
+    <table id="inputDataTable" class="display" width="100%"></table>
+</div>
+    <script src="/scripts/jquery-1.12.4.js"></script>
+    <script src="/scripts/jquery.dataTables.min.js"></script>
+    <script src="/scripts/script.js"></script>
+</body>
+</html>
