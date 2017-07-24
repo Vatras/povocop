@@ -6,7 +6,7 @@ TODO:
 [x] Set up postgres - column with user, results
 [x] Make result to persist in database
 [x] set up endpoints to get results from postgres
-[] input data - range or incremental - also in postgres
+[x] input data - range or incremental - also in postgres
 [] input data - computation config
 [] result being sorted by inputData_id
 [] Disconnect events handling

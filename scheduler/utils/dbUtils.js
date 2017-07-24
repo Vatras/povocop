@@ -13,12 +13,19 @@ const Result = sequelize.define('result', {
 });
 const InputData = sequelize.define('InputData', {
     data: Sequelize.JSON,
-    assigned: Sequelize.BOOLEAN
+    assigned: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+});
+const ComputationConfig = sequelize.define('ComputationConfig', {
+    data: Sequelize.JSON,
+    appname: Sequelize.STRING,
+    includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
 });
 
 function createTable(){
     Result.sync();
     InputData.sync()
+    ComputationConfig.sync()
+    ComputationConfig.create({data: {iterationCount:1000000},appname : 'PI'})
 }
 function init(){
     sequelize

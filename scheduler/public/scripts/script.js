@@ -35,7 +35,7 @@ function getInputData() {
 }
 function parseInputDate(dataSet){
   return dataSet.map(function(item){
-    return {data: item[1], assigned : item[2]}
+    return {data: {val1: item[1]}}
   })
 }
 function saveInputData() {
