@@ -13,19 +13,19 @@ const Result = sequelize.define('result', {
 });
 const InputData = sequelize.define('InputData', {
     data: Sequelize.JSON,
+    appName: Sequelize.STRING,
     assigned: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
 });
 const ComputationConfig = sequelize.define('ComputationConfig', {
-    data: Sequelize.JSON,
-    appname: Sequelize.STRING,
-    includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+    config: Sequelize.JSON,
+    appName: Sequelize.STRING,
+    includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
 });
 
 function createTable(){
     Result.sync();
     InputData.sync()
     ComputationConfig.sync()
-    ComputationConfig.create({data: {iterationCount:1000000},appname : 'PI'})
 }
 function init(){
     sequelize
@@ -38,6 +38,29 @@ function init(){
             console.error('Unable to connect to the database:', err);
         });
 }
+function insertConfigData(data,cb){
+    function upsert(values, condition) {
+        return ComputationConfig
+            .findOne({ where: condition })
+            .then(function(obj) {
+                if(obj) { // update
+                    obj.update(values);
+                    cb(values)
+                }
+                else { // insert
+                    var item = ComputationConfig.create(values);
+                    cb(item)
+                }
+            }).catch(function(error){
+            console.log(error)
+            cb(error);
+        })
+    }
+
+    console.log(JSON.stringify(data))
+    upsert(data, { "appName" : data.appName})
+    // ComputationConfig.create(data)
+}
 function insertResult(data){
     Result.create(data)
     Result.findOne().then(res => {
@@ -45,16 +68,29 @@ function insertResult(data){
         console.log(response);
     });
 }
-function insertInputData(data,res){
-    InputData.bulkCreate(data) .then(function(response){
-        res.json(response);
+function deleteInputData(appName,cb){
+    InputData.destroy({where : {appName: appName}}).then(res => {
+        var response = res ? res.dataValues : null;
+        console.log(response);
+        cb(response)
+    });
+}
+//change to (data,err,cb)
+function insertInputData(data,appName,cb){
+    InputData.bulkCreate(data,{options:{fields:[{appName: appName}]}}).then(function(response){
+        cb(response);
     })
         .catch(function(error){
             console.log(error)
-            res.json(error);
+            cb(error);
         })
 }
 
+function getConfigData(appName,cb){
+    ComputationConfig.findOne({where :{appName : appName}}).then(res => {
+        cb(res)
+    });
+}
 function getResults(appName,cb){
     Result.findAll({}).then(res => {
         // console.log(res);
@@ -62,14 +98,17 @@ function getResults(appName,cb){
     });
 }
 function getInputData(appName,cb){
-    InputData.findAll({}).then(res => {
+    InputData.findAll({where : {appName : appName}}).then(res => {
         cb(res)
     });
 }
 module.exports = {
     init: init,
     getResults: getResults,
+    getConfigData : getConfigData,
     getInputData: getInputData,
+    deleteInputData : deleteInputData,
     insertInputData : insertInputData,
-    insertResult : insertResult
+    insertResult : insertResult,
+    insertConfigData : insertConfigData
 }

@@ -7,8 +7,13 @@ TODO:
 [x] Make result to persist in database
 [x] set up endpoints to get results from postgres
 [x] input data - range or incremental - also in postgres
-[] input data - computation config
+[x] input data - computation config
+[x] input data having add methods, delete all and browsing all already created
+[] add separate tab for browsing and adding new data
+[] input data and config given to clients
+[] securing management and results enpoints with JWT
 [] result being sorted by inputData_id
+[] method in worker to fetch results from db (for genetic alg)
 [] Disconnect events handling
 [] Redundancy factor
 [] browser plugin refactor

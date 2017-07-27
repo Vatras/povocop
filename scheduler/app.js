@@ -18,15 +18,46 @@ app.use(cors({credentials: true, origin: true}))
 app.get('/',  (req, res) => {
     res.send('Hello World!')
 })
-app.post('/inputdata/:appname',  (req, res) => {
-    DBUtils.insertInputData(req.body.data,res);
+app.post('/data/:appname',  (req, res) => {
+    var appName = req.params.appname;
+    req.body.data.map(function(val){
+        val.appName=appName;
+        return val;
+    })
+    DBUtils.insertInputData(req.body.data,appName,function(response){
+        res.json(response)
+    });
 });
-app.get('/inputdata/:appname',  (req, res) => {
-    DBUtils.getInputData(function(response){
+app.delete('/data/:appname',  (req, res) => {
+    var appName = req.params.appname;
+    DBUtils.deleteInputData(appName,function(response){
+        res.json(response)
+    });
+});
+app.post('/config/:appname',  (req, res) => {
+    var appName = req.params.appname;
+    req.body.data.appName = appName;
+    DBUtils.insertConfigData(req.body.data,function(response){
+        res.json(response)
+    });
+});
+app.get('/config/:appname',  (req, res) => {
+    var appName = req.params.appname;
+    DBUtils.getConfigData(appName,function(response){
         res.send(response)
     });
 });
-app.get('/inputdatamanager/:appname',  (req, res) => {
+app.get('/data/:appname',  (req, res) => {
+    var appName = req.params.appname;
+    DBUtils.getInputData(appName,function(response){
+        res.send(response)
+    });
+});
+app.get('/manager/config/:appname',  (req, res) => {
+    var appName = req.params.appname;
+    res.sendFile(process.cwd()+'/views/computationConfig.html')
+});
+app.get('/manager/data/:appname',  (req, res) => {
     var appName = req.params.appname;
     res.sendFile(process.cwd()+'/views/inputDataView.html')
 });

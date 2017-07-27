@@ -37,21 +37,17 @@
 <body>
 <!-- Add your site or app content here -->
 <div>
-    <p>Povocop input data:</p>
-    <input id="startRangeInput" type="text" placeholder="range start"></input>
-    <input id="endRangeInput" type="text" placeholder="range end"></input>
+    <p>Povocop configuration data:</p>
+    <textarea rows="30" cols="60" id="configurationData" type="text" placeholder='{&#13;&#10;  "configuration" : "data in JSON" &#13;&#10;}'></textarea>
     <br/>
-    <input id="moduloInput" type="text" placeholder="optional modulo"></input>
+    <input id="includesInputData" type="checkbox">Computation will provide additional input data foe every user</input>
     <br/>
-    <button id="generateBtn">Generate data</button>
-    <button id="saveBtn">Save data</button>
-    <button id="getDataBtn">get Data</button>
-    <button id="deleteDataBtn">delete data</button>
+    <button id="saveBtn">Save configuration</button>
 
     <table id="inputDataTable" class="display" width="100%"></table>
 </div>
     <script src="/scripts/jquery-1.12.4.js"></script>
     <script src="/scripts/jquery.dataTables.min.js"></script>
-    <script src="/scripts/inputManager.js"></script>
+    <script src="/scripts/computationConfig.js"></script>
 </body>
 </html>

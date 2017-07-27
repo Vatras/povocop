@@ -1,6 +1,8 @@
 var dataSet = [];
 $('#generateBtn').on('click',generateData);
 $('#saveBtn').on('click',saveInputData);
+$('#getDataBtn').on('click',getInputData);
+$('#deleteDataBtn').on('click',deleteInputData);
 function generateData(){
   dataSet = [];
   var startRange = $('#startRangeInput').val() || 0
@@ -26,10 +28,19 @@ function createTable() {
     ]
   } );
 }
-
+function deleteInputData() {
+  var appname = window.location.pathname.split('/')[3]
+  $.ajax({
+    url: '/data/'+ appname,
+    type: 'DELETE',
+    success: function(result) {
+      // Do something with the result
+    }
+  });
+}
 function getInputData() {
-  var appname = window.location.pathname.split('/')[2]
-  $.get("inputdata/"+ appname, function (data, status) {
+  var appname = window.location.pathname.split('/')[3]
+  $.get("/data/"+ appname, function (data, status) {
 
   });
 }
@@ -39,9 +50,9 @@ function parseInputDate(dataSet){
   })
 }
 function saveInputData() {
-  var appname = window.location.pathname.split('/')[2]
+  var appName = window.location.pathname.split('/')[3]
   var inputData = parseInputDate(dataSet)
-  $.post("/inputdata/"+ appname,
+  $.post("/data/"+ appName,
       {"data" : inputData} ,function (data, status) {
 
   },"json");
