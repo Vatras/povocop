@@ -2,7 +2,7 @@
  * Created by Pjesek on 20.07.2017.
  */
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize('postgres://postgres:povocop@127.0.0.1:5432/povocop_1');
+const sequelize = new Sequelize('postgres://postgres:povocop@127.0.0.1:5432/povocop_1',{logging: false});
 // const sequelize = new Sequelize('povocop_1', 'postgres', 'povocop', {
 //     host: '127.0.0.1',
 //     dialect: 'postgres'
@@ -87,9 +87,17 @@ function insertInputData(data,appName,cb){
 }
 
 function getConfigData(appName,cb){
-    ComputationConfig.findOne({where :{appName : appName}}).then(res => {
-        cb(res)
-    });
+    const getOne = appName;
+    if(getOne){
+        ComputationConfig.findOne({where : {appName : appName}}).then(res => {
+            cb(res)
+        });
+    }else{
+        ComputationConfig.findAll({}).then(res => {
+            cb(res)
+        });
+    }
+
 }
 function getResults(appName,cb){
     Result.findAll({}).then(res => {
@@ -97,10 +105,20 @@ function getResults(appName,cb){
         cb(res)
     });
 }
-function getInputData(appName,cb){
-    InputData.findAll({where : {appName : appName}}).then(res => {
-        cb(res)
-    });
+function getInputData(appName,cb,options = {}){
+    const getOne = appName;
+
+    if(getOne){
+        const condition = options.getNotAssigned ? {where : {appName : appName, assigned : false}} : {where : {appName : appName}}
+        InputData.findAll(condition).then(res => {
+            cb(res)
+        });
+    }else{
+        const condition = options.getNotAssigned ? {where : {assigned : false}} : {}
+        InputData.findAll(condition).then(res => {
+            cb(res)
+        });
+    }
 }
 module.exports = {
     init: init,

@@ -5,11 +5,14 @@ const cors = require('cors')
 
 const TokenUtils = require('./utils/tokenUtils')
 const DBUtils = require('./utils/dbUtils')
+const DataUtils = require('./utils/dataUtils')
 const bodyParser = require('body-parser')
 
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
+let STATE = {}
 
+DataUtils.init(STATE)
 DBUtils.init();
 app.use(bodyParser.urlencoded({ extended: true }))
 
@@ -51,7 +54,7 @@ app.get('/data/:appname',  (req, res) => {
     var appName = req.params.appname;
     DBUtils.getInputData(appName,function(response){
         res.send(response)
-    });
+    },{getNotAssigned : true});
 });
 app.get('/manager/config/:appname',  (req, res) => {
     var appName = req.params.appname;
@@ -76,6 +79,10 @@ io.on('connection', (socket) => {
     let lastResultsCount = 0
     let decodedToken=TokenUtils.validateToken(socket.handshake.query.povocoptoken);
     socket.emit('computationData', { interationCount: 100000000 });
+    //for debugging - remove it later!
+    setInterval(function(){
+        socket.emit('state', STATE);
+    },5000)
 
     const isTokenInRequest = decodedToken;
     const isUsernameInRequest = isTokenInRequest && decodedToken.povocopusername;

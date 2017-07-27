@@ -9,10 +9,12 @@ TODO:
 [x] input data - range or incremental - also in postgres
 [x] input data - computation config
 [x] input data having add methods, delete all and browsing all already created
-[] add separate tab for browsing and adding new data
+[x] add separate tab for browsing and adding new data
 [] input data and config given to clients
 [] securing management and results enpoints with JWT
-[] result being sorted by inputData_id
+[] implement loading bar to wait on inputdata to be saved to db
+[] getting input data (not assigned) from DB and send it to users
+[] result browsing and sorting it by inputData_id
 [] method in worker to fetch results from db (for genetic alg)
 [] Disconnect events handling
 [] Redundancy factor

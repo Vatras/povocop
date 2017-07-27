@@ -61,7 +61,7 @@ function deleteInputData() {
     url: '/data/'+ appname,
     type: 'DELETE',
     success: function(result) {
-      // Do something with the result
+      createTable([],'browseDataTable')
     }
   });
 }

@@ -70,6 +70,9 @@
         socket.emit('numOfCpus',cpuNum)
       })
     })
+    socket.on('state',function(state){
+      console.log(state)
+    })
   }
 
   function findNumOfThreads(callback) {
