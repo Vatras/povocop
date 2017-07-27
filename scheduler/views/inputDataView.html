@@ -36,8 +36,19 @@
 </head>
 <body>
 <!-- Add your site or app content here -->
-<div>
-    <p>Povocop input data:</p>
+<div class="tab">
+    <button class="tablinks initial" onclick="openTab(event, 'addData')">Add data</button>
+    <button class="tablinks" onclick="openTab(event, 'browseData')">Browse data</button>
+</div>
+<div id="browseData" class="tabcontent">
+    <p>Current input data:</p>
+    <button id="getDataBtn">get Data</button>
+    <button id="deleteDataBtn">delete all data</button>
+
+    <table id="browseDataTable" class="display" width="100%"></table>
+</div>
+<div id="addData" class="tabcontent">
+    <p>Data to add:</p>
     <input id="startRangeInput" type="text" placeholder="range start"></input>
     <input id="endRangeInput" type="text" placeholder="range end"></input>
     <br/>
@@ -45,8 +56,6 @@
     <br/>
     <button id="generateBtn">Generate data</button>
     <button id="saveBtn">Save data</button>
-    <button id="getDataBtn">get Data</button>
-    <button id="deleteDataBtn">delete data</button>
 
     <table id="inputDataTable" class="display" width="100%"></table>
 </div>
