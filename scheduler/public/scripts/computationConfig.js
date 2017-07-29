@@ -13,11 +13,12 @@ function main(){
 
 function getConfigData() {
     var appname = window.location.pathname.split('/')[3]
-    $.get("/config/"+ appname, function (data, status) {
+
+    ajaxRequest({url:"/config/"+ appname,method:'GET'},function(data){
         if(data === ""){return;}
         document.getElementById('configurationData').value = JSON.stringify(data.config,null, 2);
         document.getElementById('includesInputData').checked = data.includesInputData
-    });
+    })
 }
 
 function saveConfigData(){
@@ -40,9 +41,10 @@ function saveConfigData(){
     var request = {};
     request.config = configDataJSON
     request.includesInputData = document.getElementById('includesInputData').checked
-    $.post("/config/"+ appName,
-        {"data" : request} ,function (data, status) {
-
-        },"json");
-
+    var requestData = {
+        data:{"data" : request},
+        url : '/config/'+ appName,
+        method : "POST"
+    }
+    ajaxRequest(requestData)
 }

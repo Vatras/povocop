@@ -1,6 +1,7 @@
+var config;
 function calc_pi(inputData){
 
-  var itEnd = inputData.interationCount
+  var itEnd = config.iterationCount;
   var start = new Date().getTime();
   var radius=1;
   var r = radius;
@@ -34,7 +35,20 @@ function calc_pi(inputData){
   });
 }
 
+self.onconfig = function(data){
+  config = data.config;
+  calc_pi(data);
+}
+
+self.ondata = function(data){
+
+}
 
 self.onmessage = function(e) {
-  calc_pi(e.data);
+  var data = e.data;
+  if(data.msgType === 'computationConfig'){
+    self.onconfig(data)
+  }else if(data.msgType === 'inputData'){
+    self.ondata(data);
+  }
 }

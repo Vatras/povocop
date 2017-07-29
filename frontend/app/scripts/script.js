@@ -49,7 +49,8 @@
 
   function initSocketIO() {
     setCookie('povocopusername','Vatras')
-    socket = io('centos:9000',{
+    var appName = "pi"
+    socket = io('centos:9000/'+appName,{
       query:{
         povocoptoken: getCookie('povocoptoken'),
         povocopusername: getCookie('povocopusername'),
@@ -59,7 +60,14 @@
   }
 
   function socketHandlersInit(socket) {
-    socket.on('computationData', function (data) {
+    socket.on('computationConfig', function (data) {
+      console.log(data)
+      data.msgType='computationConfig';
+      passDataToWorkers(data);
+    })
+    socket.on('inputData', function (data) {
+      console.log(data)
+      data.msgType='inputData';
       passDataToWorkers(data);
     })
     socket.on('token',function(token){

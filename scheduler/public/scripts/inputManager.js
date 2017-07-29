@@ -56,21 +56,26 @@ function createTable(data,tableName) {
   } );
 }
 function deleteInputData() {
-  var appname = window.location.pathname.split('/')[3]
-  $.ajax({
-    url: '/data/'+ appname,
-    type: 'DELETE',
-    success: function(result) {
-      createTable([],'browseDataTable')
-    }
-  });
+  var appName = window.location.pathname.split('/')[3]
+  var requestData = {
+    url: '/data/'+ appName,
+    method: 'DELETE'
+  }
+  ajaxRequest(requestData,function(result) {
+    console.log('success')
+    createTable([],'browseDataTable')
+  })
 }
 function getInputData() {
-  var appname = window.location.pathname.split('/')[3]
-  $.get("/data/"+ appname, function (data, status) {
-      console.log(data);
-      var parsedData = data.map(function(val,idx){return [idx,JSON.stringify(val.data),val.assigned]});
-      createTable(parsedData,'browseDataTable')
+  var appName = window.location.pathname.split('/')[3]
+  var requestData = {
+    url: "/data/"+ appName,
+    method: 'GET'
+  }
+  ajaxRequest(requestData,function (data) {
+        console.log(data);
+        var parsedData = data.map(function(val,idx){return [idx,JSON.stringify(val.data),val.assigned]});
+        createTable(parsedData,'browseDataTable')
   });
 }
 function parseInputDate(dataSet){
@@ -81,8 +86,10 @@ function parseInputDate(dataSet){
 function saveInputData() {
   var appName = window.location.pathname.split('/')[3]
   var inputData = parseInputDate(dataSet)
-  $.post("/data/"+ appName,
-      {"data" : inputData} ,function (data, status) {
-
-  },"json");
+  var requestData = {
+    url: "/data/"+ appName,
+    method: 'POST',
+    data: {"data" : inputData}
+  }
+  ajaxRequest(requestData);
 }

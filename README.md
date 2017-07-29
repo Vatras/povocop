@@ -10,9 +10,9 @@ TODO:
 [x] input data - computation config
 [x] input data having add methods, delete all and browsing all already created
 [x] add separate tab for browsing and adding new data
-[] input data and config given to clients
-[] securing management and results enpoints with JWT
-[] implement loading bar to wait on inputdata to be saved to db
+[x] input data and config given to clients
+[x]  every post make to .ajax() to encode it
+[x] implement loading bar to wait on inputdata to be saved to db
 [] getting input data (not assigned) from DB and send it to users
 [] result browsing and sorting it by inputData_id
 [] method in worker to fetch results from db (for genetic alg)
@@ -32,5 +32,6 @@ TODO:
 [] Monte Carlo simulation
 [x] Giving points for computation - JWT and results save with username
 [] set up docker-compose
+[] securing management and results enpoints with JWT
 [] check if sequelize prevents sql injection
 [] documentation + examples based on created algs

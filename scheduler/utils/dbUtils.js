@@ -48,7 +48,7 @@ function insertConfigData(data,cb){
                     cb(values)
                 }
                 else { // insert
-                    var item = ComputationConfig.create(values);
+                    const item = ComputationConfig.create(values);
                     cb(item)
                 }
             }).catch(function(error){
@@ -64,13 +64,13 @@ function insertConfigData(data,cb){
 function insertResult(data){
     Result.create(data)
     Result.findOne().then(res => {
-        var response = res ? res.dataValues : null;
+        const response = res ? res.dataValues : null;
         console.log(response);
     });
 }
 function deleteInputData(appName,cb){
     InputData.destroy({where : {appName: appName}}).then(res => {
-        var response = res ? res.dataValues : null;
+        const response = res ? res : null;
         console.log(response);
         cb(response)
     });
@@ -109,12 +109,16 @@ function getInputData(appName,cb,options = {}){
     const getOne = appName;
 
     if(getOne){
-        const condition = options.getNotAssigned ? {where : {appName : appName, assigned : false}} : {where : {appName : appName}}
+        let condition = options.getNotAssigned ? {where : {appName : appName, assigned : false}} : {where : {appName : appName}}
+        condition.limit = options.limit
         InputData.findAll(condition).then(res => {
             cb(res)
         });
     }else{
-        const condition = options.getNotAssigned ? {where : {assigned : false}} : {}
+        let condition = options.getNotAssigned ? {where : {assigned : false}} : {}
+        if(options.limit){
+            condition.limit = options.limit
+        }
         InputData.findAll(condition).then(res => {
             cb(res)
         });

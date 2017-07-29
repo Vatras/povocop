@@ -45,3 +45,16 @@ div.tab button.active {
     border: 1px solid #ccc;
     border-top: none;
 }
+
+div#loadingSpinner {
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    left: 40%;
+    top: 30%;
+    z-index: 50;
+}
+
+.hidden{
+    display:none;
+}
