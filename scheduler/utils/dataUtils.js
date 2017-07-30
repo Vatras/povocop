@@ -2,6 +2,7 @@
  * Created by Pjesek on 28.07.2017.
  */
 const DBUtils = require('./dbUtils')
+const CONFIG =  require('../config')
 function init(STATE){
     return new Promise((resolve, reject) => {
         addConfigDataToState(STATE).then(function(stateWithConfig){
@@ -17,6 +18,8 @@ function addConfigDataToState(STATE){
             let configs = res || [];
             STATE.config = {}
             configs.forEach(function(val){
+                STATE.redundancyFactors[val.dataValues.appName]=val.dataValues.redundancyFactor;
+                delete val.dataValues.redundancyFactor;
                 STATE.config[val.dataValues.appName]=val.dataValues;
             })
             resolve(STATE)
@@ -59,11 +62,21 @@ function getInputsForAllApps(apps){
                     if(allAppsDataFetched){
                         resolve(inputData)
                     }
-                }, {getNotAssigned: true, limit: 500})
+                }, {getNotAssigned: true, limit: CONFIG.cachedInputDataSize})
             })(app)
         })
     })
 }
+function getInputData(STATE,socket,numOfCpus){
+    const appName = socket.appName;
+    let toSend = STATE.cachedInputData[appName].splice(0,numOfCpus);
+    const dataIds = toSend.map(function(item){
+        return item.id
+    })
+    DBUtils.assignInputData(appName,dataIds,socket.ip)
+    return toSend.length !== 0 ? toSend : null
+}
 module.exports = {
-    init: init
+    init: init,
+    getInputData : getInputData
 }

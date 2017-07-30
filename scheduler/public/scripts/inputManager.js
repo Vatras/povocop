@@ -13,7 +13,7 @@ function generateData(){
   modulo = parseInt(modulo)
   var idx = 0;
   for(var i=startRange;i<endRange;i+=modulo){
-    dataSet.push([idx++,i,false])
+    dataSet.push([idx++,i,''])
   }
   createTable(dataSet,'inputDataTable')
 }

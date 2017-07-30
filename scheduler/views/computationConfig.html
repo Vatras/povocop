@@ -43,9 +43,14 @@
 <!-- Add your site or app content here -->
 <div>
     <p>Povocop configuration data:</p>
-    <textarea rows="30" cols="60" id="configurationData" type="text" placeholder='{&#13;&#10;  "configuration" : "data in JSON" &#13;&#10;}'></textarea>
+    <textarea rows="30" cols="45" id="configurationData" type="text" placeholder='{&#13;&#10;  "configuration" : "data in JSON" &#13;&#10;}'></textarea>
+    <textarea rows="30" cols="60" id="code" type="text" placeholder='function(){&#13;&#10;  self.postMessage({}) &#13;&#10;}'></textarea>
     <br/>
-    <input id="includesInputData" type="checkbox">Computation will provide additional input data foe every user</input>
+    <label>Redundancy factor:</label>
+    <input id="redundancyFactor" type="text"></input>
+    <br/>
+    <label>Additional input data?</label>
+    <input id="includesInputData" type="checkbox"></input>
     <br/>
     <button id="saveBtn">Save configuration</button>
 

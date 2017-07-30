@@ -10,7 +10,15 @@ const bodyParser = require('body-parser')
 
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
-let STATE = {}
+const EventEmitter = require('events');
+
+class MyEmitter extends EventEmitter {}
+const socketEventsEmitter = new MyEmitter();
+let STATE = {
+    redundancyFactors: {},
+    config : {},
+    apps : []
+}
 
 DataUtils.init(STATE).then(initSocketsAndHTTP);
 DBUtils.init();
@@ -41,7 +49,10 @@ app.delete('/data/:appname',  (req, res) => {
 app.post('/config/:appname',  (req, res) => {
     const appName = req.params.appname;
     req.body.data.appName = appName;
+    const redundancyFactor = req.body.data.redundancyFactor
+    req.body.data.redundancyFactor = redundancyFactor !== "" ? parseInt(redundancyFactor) :0;
     DBUtils.insertConfigData(req.body.data,function(response){
+        newConfigCallback(response);
         res.json(response)
     });
 });
@@ -71,7 +82,18 @@ app.get('/results/:appname',  (req, res) => {
         res.send(results)
     })
 })
-
+function newConfigCallback(response){
+    const appName = response.appName
+    if(!STATE.apps.includes(appName)){
+        STATE.apps.push(appName);
+    }
+    STATE.redundancyFactors[appName]=response.redundancyFactor;
+    delete response['redundancyFactor'];
+    STATE.config[appName]=response;
+    socketEventsEmitter.emit('newConfig')
+    const nsp = io.of(`/${appName}`);
+    nsp.on('connection', socketHandler)
+}
 function initSocketsAndHTTP(configuredState){
     STATE = configuredState;
     server.listen(port, () => {
@@ -87,58 +109,84 @@ function initSocketsAndHTTP(configuredState){
     const nsp = io.of('/random');
     nsp.on('connection', socketHandler)
     // io.on('connection', socketHandler)
-    function socketHandler(socket){
-        const nsp = this;
-        socket.appName = nsp.name !== '/random' ? nsp.name.split('/').join('') : STATE.apps[Math.floor((Math.random() * STATE.apps.length))]
-        console.log(socket.appName)
-        let resultsCount = 0
-        let lastResultsCount = 0
-        let decodedToken=TokenUtils.validateToken(socket.handshake.query.povocoptoken);
+
+}
+
+function socketHandler(socket){
+    socket.ip = socket.handshake.address;
+    console.log('New connection from ' + socket.ip);
+    const nsp = this;
+    socket.appName = nsp.name !== '/random' ? nsp.name.split('/').join('') : STATE.apps[Math.floor((Math.random() * STATE.apps.length))]
+    console.log(socket.appName)
+    let resultsCount = 0
+    let lastResultsCount = 0
+    let decodedToken=TokenUtils.validateToken(socket.handshake.query.povocoptoken);
+    //for debugging - remove it later!
+    setInterval(function(){
+        nsp.emit('state', STATE);
+    },5000)
+
+    const isTokenInRequest = decodedToken;
+    const isUsernameInRequest = isTokenInRequest && decodedToken.povocopusername;
+    socketEventsEmitter.on('newConfig',() =>{
         socket.emit('computationConfig', STATE.config[socket.appName]);
-        //for debugging - remove it later!
-        setInterval(function(){
-            nsp.emit('state', STATE);
-        },5000)
-
-        const isTokenInRequest = decodedToken;
-        const isUsernameInRequest = isTokenInRequest && decodedToken.povocopusername;
-        if(!isTokenInRequest){
-            socket.emit('computeNumOfCpu', {});
-            socket.once('numOfCpus', (numOfCpus) => {
-                const tokenToSend = TokenUtils.createToken(socket,numOfCpus)
-                socket.emit('token', tokenToSend);
-            });
-        }else if(!isUsernameInRequest){
-            const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus)
-            socket.emit('token', tokenToSend)
-        }else{
-            socket.povocopData=decodedToken;
-        }
-        socket.on('results', (results) => {
-            resultsCount++;
-            const username = socket.povocopData ? socket.povocopData.povocopusername : 'anonymous'
-            console.log('results',results)
-            DBUtils.insertResult({
-                username: username,
-                result: results
-            })
-            socket.emit('inputData', { interationCount: 100000000 });
-        })
-        let interval = setInterval(() => {
-            if(!socket.povocopData){
-                return
-            }
-            let strength = resultsCount - lastResultsCount;
-            lastResultsCount = resultsCount;
-            socket.povocopData.points+=strength;
-            const tokenToSend = TokenUtils.updateToken(socket)
+    })
+    if(!isTokenInRequest){
+        socket.emit('computeNumOfCpu', {});
+        socket.once('numOfCpus', (numOfCpus) => {
+            const tokenToSend = TokenUtils.createToken(socket,numOfCpus)
             socket.emit('token', tokenToSend);
-        },1000*20*1)
+            socket.emit('computationConfig', STATE.config[socket.appName]);
+            if(STATE.config[socket.appName].includesInputData){
+                const inputDataToSend = DataUtils.getInputData(STATE,socket,numOfCpus)
+                if(inputDataToSend){
+                    for(let i=0;i<numOfCpus;i++){
+                        if(inputDataToSend.length < i){
+                            socket.emit('inputData', {workerNum: i, inputData : inputDataToSend[i]});
+                        }
+                    }
+                }
 
-        socket.on('disconnect',()=>{
-            console.log("disconnected!",socket.povocopData.povocopusername)
-            clearInterval(interval);
-            interval = null;
-        })
+            }
+
+        });
+    }else if(!isUsernameInRequest){
+        const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus)
+        socket.emit('token', tokenToSend)
+        socket.emit('computationConfig', STATE.config[socket.appName]);
+    }else{
+        socket.povocopData=decodedToken;
+        socket.emit('computationConfig', STATE.config[socket.appName]);
     }
+    socket.on('results', (results) => {
+        resultsCount++;
+        const username = socket.povocopData ? socket.povocopData.povocopusername : 'anonymous'
+        console.log('results',results)
+        DBUtils.insertResult({
+            username: username,
+            result: results,
+        })
+        if(STATE.config[socket.appName].includesInputData){
+            const inputDataToSend = DataUtils.getInputData(STATE,socket,1)
+            if(inputDataToSend){
+                socket.emit('inputData', {workerNum: results.workerNum, inputData : inputDataToSend[0]});
+            }
+        }
+    })
+    let interval = setInterval(() => {
+        if(!socket.povocopData){
+            return
+        }
+        let strength = resultsCount - lastResultsCount;
+        lastResultsCount = resultsCount;
+        socket.povocopData.points+=strength;
+        const tokenToSend = TokenUtils.updateToken(socket)
+        socket.emit('token', tokenToSend);
+    },1000*20*1)
+
+    socket.on('disconnect',()=>{
+        console.log("disconnected!",socket.povocopData ? socket.povocopData.povocopusername : 'anonymous')
+        clearInterval(interval);
+        interval = null;
+    })
 }

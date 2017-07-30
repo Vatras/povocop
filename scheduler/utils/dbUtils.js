@@ -1,23 +1,29 @@
 /**
  * Created by Pjesek on 20.07.2017.
  */
+const CONFIG =  require('../config')
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize('postgres://postgres:povocop@127.0.0.1:5432/povocop_1',{logging: false});
-// const sequelize = new Sequelize('povocop_1', 'postgres', 'povocop', {
-//     host: '127.0.0.1',
-//     dialect: 'postgres'
-// });
+const sequelize = new Sequelize(CONFIG.dbName, CONFIG.dbUser, CONFIG.dbPassword, {
+    host: CONFIG.dbHost,
+    dialect: 'postgres',
+    logging: CONFIG.dbLogging
+});
 const Result = sequelize.define('result', {
     username: Sequelize.STRING,
-    result: Sequelize.JSON
+    result: Sequelize.JSON,
+    uuid: {type: Sequelize.UUID, allowNull: false, defaultValue: Sequelize.UUIDV4},
+    approved: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+    valid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
 });
 const InputData = sequelize.define('InputData', {
     data: Sequelize.JSON,
     appName: Sequelize.STRING,
-    assigned: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+    assignedTo: { type: Sequelize.STRING, allowNull: true, defaultValue: ''},
 });
 const ComputationConfig = sequelize.define('ComputationConfig', {
     config: Sequelize.JSON,
+    code: Sequelize.TEXT,
+    redundancyFactor: Sequelize.NUMERIC,
     appName: Sequelize.STRING,
     includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
 });
@@ -49,7 +55,7 @@ function insertConfigData(data,cb){
                 }
                 else { // insert
                     const item = ComputationConfig.create(values);
-                    cb(item)
+                    cb(values)
                 }
             }).catch(function(error){
             console.log(error)
@@ -59,7 +65,6 @@ function insertConfigData(data,cb){
 
     console.log(JSON.stringify(data))
     upsert(data, { "appName" : data.appName})
-    // ComputationConfig.create(data)
 }
 function insertResult(data){
     Result.create(data)
@@ -89,15 +94,14 @@ function insertInputData(data,appName,cb){
 function getConfigData(appName,cb){
     const getOne = appName;
     if(getOne){
-        ComputationConfig.findOne({where : {appName : appName}}).then(res => {
+        ComputationConfig.findOne({where : {appName : appName}},{attributes: ['appName', 'config','code','config','includesInputData']}).then(res => {
             cb(res)
         });
     }else{
-        ComputationConfig.findAll({}).then(res => {
+        ComputationConfig.findAll({attributes: ['appName', 'config','code','config','includesInputData','redundancyFactor']}).then(res => {
             cb(res)
         });
     }
-
 }
 function getResults(appName,cb){
     Result.findAll({}).then(res => {
@@ -105,17 +109,22 @@ function getResults(appName,cb){
         cb(res)
     });
 }
+function assignInputData(appName,dataIds,ip){
+    InputData.update({ assignedTo: ip },{where : {appName : appName, assignedTo : '', id : {$in : dataIds}}}).then(data => {
+
+    });
+}
 function getInputData(appName,cb,options = {}){
     const getOne = appName;
 
     if(getOne){
-        let condition = options.getNotAssigned ? {where : {appName : appName, assigned : false}} : {where : {appName : appName}}
+        let condition = options.getNotAssigned ? {where : {appName : appName, assignedTo : ''}} : {where : {appName : appName}}
         condition.limit = options.limit
         InputData.findAll(condition).then(res => {
             cb(res)
         });
     }else{
-        let condition = options.getNotAssigned ? {where : {assigned : false}} : {}
+        let condition = options.getNotAssigned ? {where : {assignedTo : ''}} : {}
         if(options.limit){
             condition.limit = options.limit
         }
@@ -125,6 +134,7 @@ function getInputData(appName,cb,options = {}){
     }
 }
 module.exports = {
+    assignInputData : assignInputData,
     init: init,
     getResults: getResults,
     getConfigData : getConfigData,

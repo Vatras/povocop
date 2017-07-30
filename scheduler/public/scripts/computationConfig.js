@@ -18,6 +18,8 @@ function getConfigData() {
         if(data === ""){return;}
         document.getElementById('configurationData').value = JSON.stringify(data.config,null, 2);
         document.getElementById('includesInputData').checked = data.includesInputData
+        document.getElementById('redundancyFactor').value = data.redundancyFactor
+        document.getElementById('code').value = data.code
     })
 }
 
@@ -38,7 +40,10 @@ function saveConfigData(){
         alert('Couldn\'t parse text. It is not in valid JSON format. \nAre the variable names in quotation marks ( "" )? ')
         return;
     }
+
     var request = {};
+    request.code = document.getElementById("code").value//{code: eval(document.getElementById("code").value)}
+    request.redundancyFactor = document.getElementById("redundancyFactor").value;
     request.config = configDataJSON
     request.includesInputData = document.getElementById('includesInputData').checked
     var requestData = {

@@ -2,10 +2,14 @@
   var webWorkers = [];
   var workerCount = 2;
   var socket;
-  function passDataToWorkers(data) {
-    webWorkers.forEach(function (webWorker) {
-      webWorker.postMessage(data);
-    });
+  function passDataToWorkers(data,workerNum) {
+    if(workerNum){
+      webWorkers[workerNum].postMessage(data);
+    }else{
+      webWorkers.forEach(function (webWorker) {
+        webWorker.postMessage(data);
+      });
+    }
   }
   function getCookie(cname) {
     var name = cname + "=";
@@ -32,6 +36,7 @@
     webWorkers.forEach(function (webWorker) {
       webWorker.onmessage = function (e) {
         console.log('onmessage', e)
+        e.data.workerNum = webWorker.num;
         socket.emit('results',e.data)
       }
       webWorker.onerror = function (e) {
@@ -40,16 +45,27 @@
     });
   }
 
-  function initWorkers() {
+  function initWorkers(code) {
+    var blob = new Blob([code], {type: "application/javascript"});
+
+    if(webWorkers.length>0){
+      webWorkers.forEach(function (tempWorker) {
+        tempWorker.terminate();
+      })
+    }
     for (var i = 0; i < workerCount; i++) {
-      var newWorker = new Worker('scripts/computationCode.js')
+      // var newWorker = new Worker('scripts/computationCode.js')
+      var newWorker = new Worker(URL.createObjectURL(blob));
+      newWorker.num=i;
       webWorkers.push(newWorker);
     }
   }
 
   function initSocketIO() {
-    setCookie('povocopusername','Vatras')
-    var appName = "pi"
+    // setCookie('povocopusername','Vatras')
+    var appName = document.getElementById("povocopscript")
+      && document.getElementById("povocopscript").getAttribute("appName");
+    appName = appName || 'random'
     socket = io('centos:9000/'+appName,{
       query:{
         povocoptoken: getCookie('povocoptoken'),
@@ -63,12 +79,14 @@
     socket.on('computationConfig', function (data) {
       console.log(data)
       data.msgType='computationConfig';
+      initWorkers(data.code);
+      initWorkersHandlers();
       passDataToWorkers(data);
     })
     socket.on('inputData', function (data) {
       console.log(data)
       data.msgType='inputData';
-      passDataToWorkers(data);
+      passDataToWorkers(data,data.workerNum);
     })
     socket.on('token',function(token){
       setCookie('povocoptoken', token)
@@ -85,9 +103,35 @@
 
   function findNumOfThreads(callback) {
     function createWorkers(numberOfWorkers) {
+      function testScript(){
+          function doCalculations(){
+          var iterationCount = 15000000;
+          var start = new Date().getTime();
+          var res = 1;
+          while (iterationCount>0 && res>0) {
+            res = iterationCount%13+iterationCount/2+iterationCount+1+Math.random()*Math.random();
+            iterationCount--;
+          }
+          var end =  new Date().getTime();
+          self.postMessage({
+            time: start-end
+          });
+        }
+
+        self.onmessage = function(e) {
+          doCalculations(e.data);
+        }
+      }
+
+      var code = testScript.toString();
+      code = code.substring(code.indexOf("{")+1, code.lastIndexOf("}"));
+
+      var blob = new Blob([code], {type: "application/javascript"});
+
       var tempWorkers = [];
       for (var i = 0; i < numberOfWorkers; i++) {
-        var tempWorker = new Worker('scripts/test.js');
+        var tempWorker = new Worker(URL.createObjectURL(blob));
+        // var tempWorker = new Worker('scripts/test.js');
         tempWorkers.push(tempWorker)
       }
       return tempWorkers;
@@ -139,8 +183,6 @@
 
 
   function init() {
-    initWorkers();
-    initWorkersHandlers();
     var socket = initSocketIO();
     socketHandlersInit(socket)
   }

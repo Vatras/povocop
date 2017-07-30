@@ -13,11 +13,14 @@ TODO:
 [x] input data and config given to clients
 [x]  every post make to .ajax() to encode it
 [x] implement loading bar to wait on inputdata to be saved to db
-[] getting input data (not assigned) from DB and send it to users
+[x] code in configuration
+[x] code to be send after user connects
+[x] config to be changed after altering it in db
+[x] getting input data (not assigned) from DB and send it to users - field to which worker goes
 [] result browsing and sorting it by inputData_id
-[] method in worker to fetch results from db (for genetic alg)
+[] method in worker to fetch results from db (for genetic alg) - alter the config instead and make users verify before
 [] Disconnect events handling
-[] Redundancy factor
+[] Redundancy factor - socket id usage? mac adress usage?
 [] browser plugin refactor
 [] intensity of computation - CPU usage selection
 [x] tracking user's performance: a CPU number test

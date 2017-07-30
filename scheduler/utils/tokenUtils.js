@@ -2,13 +2,16 @@
  * Created by Pjesek on 20.07.2017.
  */
 const jwt = require('jwt-simple');
-const secret = process.env.secret || 'abXcdEF96412'
+const CONFIG =  require('../config')
+const secret = CONFIG.secretToSignJWT;
+const uuidv4 = require('uuid/v4');
 function createToken(socket,numOfCpus){
     const username = socket.handshake.query.povocopusername;
     console.log("username:",username)
     const payload = {
         numOfCpus: numOfCpus,
-        points: 0
+        points: 0,
+        uuid: uuidv4()
     };
     if(username && username.length>0){
         payload.povocopusername = username;
