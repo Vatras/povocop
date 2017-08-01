@@ -1,8 +1,24 @@
 var dataSet = [];
+var customFunctionProvided = false;
+
+var customFunctionCodeTemplate = function(start,end,modulo){
+    var iterator=0;
+    while(start+iterator < end){
+        dataSet.push({val1: (start+iterator)%modulo})
+        iterator+=1;
+    }
+}
+
+$('#customFunction').val(customFunctionCodeTemplate.toString())
 $('#generateBtn').on('click',generateData);
 $('#saveBtn').on('click',saveInputData);
 $('#getDataBtn').on('click',getInputData);
 $('#deleteDataBtn').on('click',deleteInputData);
+$('#isCustomFunction').on('click',showCustomFunctionField);
+function showCustomFunctionField(){
+  customFunctionProvided = !customFunctionProvided
+    $('#customFunction').toggleClass('hidden');
+}
 function generateData(){
   dataSet = [];
   var startRange = $('#startRangeInput').val() || 0
@@ -12,9 +28,16 @@ function generateData(){
   var modulo = $('#moduloInput').val() || 1
   modulo = parseInt(modulo)
   var idx = 0;
-  for(var i=startRange;i<endRange;i+=modulo){
-    dataSet.push([idx++,i,''])
+  var customFunctionCode;
+  if(!customFunctionProvided){
+      customFunctionCode = customFunctionCodeTemplate
+  }else{
+      customFunctionCode = eval('('+$('#customFunction').val()+')')
   }
+  customFunctionCode(startRange,endRange,modulo)
+    dataSet = dataSet.map(function(item,idx){
+      return [idx,JSON.stringify(item,null,2),'']
+    })
   createTable(dataSet,'inputDataTable')
 }
 window.onload= function(){

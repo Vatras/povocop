@@ -37,7 +37,7 @@ function calc_pi(inputData){
 
 self.onconfig = function(data){
   config = data.config;
-  calc_pi(data);
+  //setInterval(function(){main(data);})
 }
 
 self.ondata = function(data){
@@ -45,10 +45,6 @@ self.ondata = function(data){
 }
 
 self.onmessage = function(e) {
-  var data = e.data;
-  if(data.msgType === 'computationConfig'){
-    self.onconfig(data)
-  }else if(data.msgType === 'inputData'){
-    self.ondata(data);
-  }
+  var funName = e.data.msgType === 'inputData' ? 'ondata' : 'onconfig';
+  self[funName](e.data)
 }

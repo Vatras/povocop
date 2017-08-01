@@ -15,11 +15,11 @@ function getConfigData() {
     var appname = window.location.pathname.split('/')[3]
 
     ajaxRequest({url:"/config/"+ appname,method:'GET'},function(data){
-        if(data === ""){return;}
-        document.getElementById('configurationData').value = JSON.stringify(data.config,null, 2);
-        document.getElementById('includesInputData').checked = data.includesInputData
-        document.getElementById('redundancyFactor').value = data.redundancyFactor
-        document.getElementById('code').value = data.code
+
+        document.getElementById('configurationData').value = data.config ? JSON.stringify(data.config,null, 2) : '';
+        document.getElementById('includesInputData').checked = data.includesInputData ? data.includesInputData : false;
+        document.getElementById('redundancyFactor').value = data.redundancyFactor ? data.redundancyFactor : 0;
+        document.getElementById('code').value = data.code ? data.code : '';
     })
 }
 

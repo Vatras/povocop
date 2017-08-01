@@ -20,13 +20,15 @@ TODO:
 [] result browsing and sorting it by inputData_id
 [] method in worker to fetch results from db (for genetic alg) - alter the config instead and make users verify before
 [] Disconnect events handling
-[] Redundancy factor - socket id usage? mac adress usage?
+[x] Redundancy factor - socket id usage? mac adress usage?
 [] browser plugin refactor
 [] intensity of computation - CPU usage selection
 [x] tracking user's performance: a CPU number test
 [] tracking user's performance, adaptive scheduling
 [] db replication and failover
-[] submission of computation code as a service, not file
+[] own input Data as array
+[] function to generate custom inputData
+[x] submission of computation code as a service, not file
 [] validation of submitted code
 [] frontend for browsing results
 [] Genetic algorithm
@@ -38,3 +40,8 @@ TODO:
 [] securing management and results enpoints with JWT
 [] check if sequelize prevents sql injection
 [] documentation + examples based on created algs
+
+SEPTEMBER:
+[] highlight textareas
+[] csses
+[] saving showCustomFunctionField

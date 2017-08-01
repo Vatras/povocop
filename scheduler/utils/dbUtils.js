@@ -95,6 +95,7 @@ function getConfigData(appName,cb){
     const getOne = appName;
     if(getOne){
         ComputationConfig.findOne({where : {appName : appName}},{attributes: ['appName', 'config','code','config','includesInputData']}).then(res => {
+            res = res || {}
             cb(res)
         });
     }else{
