@@ -1,12 +1,24 @@
 var dataSet = [];
 var customFunctionProvided = false;
 
-var customFunctionCodeTemplate = function(start,end,modulo){
-    var iterator=0;
-    while(start+iterator < end){
-        dataSet.push({val1: (start+iterator)%modulo})
-        iterator+=1;
-    }
+// var customFunctionCodeTemplate = function(start,end,modulo){
+//     var iterator=0;
+//     while(start+iterator < end){
+//         dataSet.push({val1: (start+iterator)%modulo})
+//         iterator+=1;
+//     }
+// }
+
+var customFunctionCodeTemplate = function (start,end,modulo){
+  var iterator=0;
+  while(start+iterator < end){
+    for(i=start;i<end;i++)
+      if(i!=iterator)
+        dataSet.push({val1: (start+iterator),
+          val2: (start+i)
+        })
+    iterator+=1;
+  }
 }
 
 $('#customFunction').val(customFunctionCodeTemplate.toString())
@@ -36,7 +48,7 @@ function generateData(){
   }
   customFunctionCode(startRange,endRange,modulo)
     dataSet = dataSet.map(function(item,idx){
-      return [idx,JSON.stringify(item,null,2),'']
+      return [idx,JSON.stringify(item),'']
     })
   createTable(dataSet,'inputDataTable')
 }
@@ -74,7 +86,7 @@ function createTable(data,tableName) {
     columns: [
       { title: "No." },
       { title: "Value" },
-      { title: "Assigned" }
+      { title: "AssignedTo" }
     ]
   } );
 }
@@ -97,13 +109,13 @@ function getInputData() {
   }
   ajaxRequest(requestData,function (data) {
         console.log(data);
-        var parsedData = data.map(function(val,idx){return [idx,JSON.stringify(val.data),val.assigned]});
+        var parsedData = data.inputData.map(function(val,idx){return [idx,JSON.stringify(val.data),val.assignedTo]});
         createTable(parsedData,'browseDataTable')
   });
 }
 function parseInputDate(dataSet){
   return dataSet.map(function(item){
-    return {data: {val1: item[1]}}
+    return {data: item[1]}
   })
 }
 function saveInputData() {

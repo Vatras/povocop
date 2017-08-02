@@ -28,21 +28,26 @@ const ComputationConfig = sequelize.define('ComputationConfig', {
     includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
 });
 
-function createTable(){
+function createTable(resolve){
     Result.sync();
     InputData.sync()
-    ComputationConfig.sync()
+    ComputationConfig.sync().then(()=>{
+        resolve();
+    })
 }
 function init(){
-    sequelize
-        .authenticate()
-        .then(() => {
-            console.log('Connection has been established successfully.');
-            createTable();
-        })
-        .catch(err => {
-            console.error('Unable to connect to the database:', err);
-        });
+    return new Promise((resolve,reject)=>{
+        sequelize
+            .authenticate()
+            .then(() => {
+                console.log('Connection has been established successfully.');
+                createTable(resolve,reject);
+            })
+            .catch(err => {
+                console.error('Unable to connect to the database:', err);
+            });
+    })
+
 }
 function insertConfigData(data,cb){
     function upsert(values, condition) {

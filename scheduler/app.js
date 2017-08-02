@@ -20,8 +20,9 @@ let STATE = {
     apps : []
 }
 
-DataUtils.init(STATE).then(initSocketsAndHTTP);
-DBUtils.init();
+DBUtils.init().then(() => {
+    DataUtils.init(STATE).then(initSocketsAndHTTP);} );
+
 
 app.use(bodyParser.json({limit: '50mb', extended: true, parameterLimit:500000}));
 
@@ -65,7 +66,7 @@ app.get('/config/:appname',  (req, res) => {
 app.get('/data/:appname',  (req, res) => {
     const appName = req.params.appname;
     DBUtils.getInputData(appName,function(response){
-        res.send(response)
+        res.send({inputData: response})
     },{getNotAssigned : true});
 });
 app.get('/manager/config/:appname',  (req, res) => {
@@ -138,15 +139,7 @@ function socketHandler(socket){
             socket.emit('token', tokenToSend);
             socket.emit('computationConfig', STATE.config[socket.appName]);
             if(STATE.config[socket.appName].includesInputData){
-                const inputDataToSend = DataUtils.getInputData(STATE,socket,numOfCpus)
-                if(inputDataToSend){
-                    for(let i=0;i<numOfCpus;i++){
-                        if(inputDataToSend.length < i){
-                            socket.emit('inputData', {workerNum: i, inputData : inputDataToSend[i]});
-                        }
-                    }
-                }
-
+                DataUtils.sendInputDataToWorkers(STATE,socket,numOfCpus)
             }
 
         });
@@ -154,9 +147,15 @@ function socketHandler(socket){
         const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus)
         socket.emit('token', tokenToSend)
         socket.emit('computationConfig', STATE.config[socket.appName]);
+        if(STATE.config[socket.appName].includesInputData){
+            DataUtils.sendInputDataToWorkers(STATE,socket,decodedToken.numOfCpus)
+        }
     }else{
         socket.povocopData=decodedToken;
         socket.emit('computationConfig', STATE.config[socket.appName]);
+        if(STATE.config[socket.appName].includesInputData){
+            DataUtils.sendInputDataToWorkers(STATE,socket,decodedToken.numOfCpus)
+        }
     }
     socket.on('results', (results) => {
         resultsCount++;
@@ -167,10 +166,7 @@ function socketHandler(socket){
             result: results,
         })
         if(STATE.config[socket.appName].includesInputData){
-            const inputDataToSend = DataUtils.getInputData(STATE,socket,1)
-            if(inputDataToSend){
-                socket.emit('inputData', {workerNum: results.workerNum, inputData : inputDataToSend[0]});
-            }
+            DataUtils.sendInputDataToSingleWorker(STATE,socket,results.workerNum)
         }
     })
     let interval = setInterval(() => {

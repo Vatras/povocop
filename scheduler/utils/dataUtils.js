@@ -76,7 +76,26 @@ function getInputData(STATE,socket,numOfCpus){
     DBUtils.assignInputData(appName,dataIds,socket.ip)
     return toSend.length !== 0 ? toSend : null
 }
+
+function sendInputDataToWorkers(STATE,socket,numOfCpus){
+    const inputDataToSend = getInputData(STATE,socket,numOfCpus)
+    if(inputDataToSend){
+        for(let i=0;i<numOfCpus;i++){
+            if(i < inputDataToSend.length){
+                socket.emit('inputData', {workerNum: i, inputData : inputDataToSend[i]});
+            }
+        }
+    }
+}
+function sendInputDataToSingleWorker(STATE,socket,workerNum){
+    const inputDataToSend = getInputData(STATE,socket,1)
+    if(inputDataToSend){
+        socket.emit('inputData', {workerNum: workerNum, inputData : inputDataToSend[0]});
+    }
+}
 module.exports = {
     init: init,
-    getInputData : getInputData
+    getInputData : getInputData,
+    sendInputDataToWorkers : sendInputDataToWorkers,
+    sendInputDataToSingleWorker : sendInputDataToSingleWorker
 }

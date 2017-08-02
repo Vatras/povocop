@@ -2,14 +2,17 @@
  * Created by Pjesek on 01.08.2017.
  */
 var config;
-function main(inputDataa){
+function main(inputData){
 
-  var itEnd = config.iterationCount;
-
+  console.log('inputData.val1,inputData.val2',inputData.val1,inputData.val2);
+  var i=0;
+  while(i<10000000000){
+    i+=1
+  }
   self.postMessage({
     results:{
-      "points_inside": points_inside,
-      "points_total" : points_total
+      // "points_inside": points_inside,
+      // "points_total" : points_total
     }
   });
 
@@ -21,7 +24,7 @@ self.onconfig = function(data){
 }
 
 self.ondata = function(data){
-
+  main(data.inputData);
 }
 
 self.onmessage = function(e) {
@@ -30,13 +33,13 @@ self.onmessage = function(e) {
 }
 
 // function (start,end,modulo){
-//   var iterator=0
-//   var it2=0;
+//   var iterator=0;
 //   while(start+iterator < end){
-//     for(var it2=1;it2<100;it2++)
-//     {dataSet.push({val1: (start+iterator),
-//       val2: it2
-//     })}
-//     iterator+=2;
+//     for(i=start;i<end;i++)
+//       if(i!=iterator)
+//         dataSet.push({val1: (start+iterator),
+//           val2: (start+i)
+//         })
+//     iterator+=1;
 //   }
 // }

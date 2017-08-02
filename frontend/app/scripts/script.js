@@ -1,9 +1,9 @@
 (function() {
   var webWorkers = [];
-  var workerCount = 2;
+  var workerCount = parseInt(localStorage.getItem('povocopCpuNum')||'0');
   var socket;
   function passDataToWorkers(data,workerNum) {
-    if(workerNum){
+    if(typeof workerNum !== "undefined"){
       webWorkers[workerNum].postMessage(data);
     }else{
       webWorkers.forEach(function (webWorker) {
@@ -36,7 +36,7 @@
     webWorkers.forEach(function (webWorker) {
       webWorker.onmessage = function (e) {
         console.log('onmessage', e)
-        e.data.workerNum = webWorker.num;
+        e.data.workerNum = this.num;
         socket.emit('results',e.data)
       }
       webWorker.onerror = function (e) {
@@ -52,6 +52,7 @@
       webWorkers.forEach(function (tempWorker) {
         tempWorker.terminate();
       })
+      webWorkers = []
     }
     for (var i = 0; i < workerCount; i++) {
       // var newWorker = new Worker('scripts/computationCode.js')
@@ -84,8 +85,9 @@
       passDataToWorkers(data);
     })
     socket.on('inputData', function (data) {
-      console.log(data)
+      console.log('inputData',data)
       data.msgType='inputData';
+      data.inputData = JSON.parse(data.inputData.data)
       passDataToWorkers(data,data.workerNum);
     })
     socket.on('token',function(token){
@@ -93,6 +95,8 @@
     });
     socket.on('computeNumOfCpu',function(){
       findNumOfThreads(function(cpuNum){
+        localStorage.setItem('povocopCpuNum',cpuNum);
+        workerCount=cpuNum;
         socket.emit('numOfCpus',cpuNum)
       })
     })
