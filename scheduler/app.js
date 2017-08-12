@@ -6,6 +6,7 @@ const cors = require('cors')
 const TokenUtils = require('./utils/tokenUtils')
 const DBUtils = require('./utils/dbUtils')
 const DataUtils = require('./utils/dataUtils')
+const ResultUtils = require('./utils/resultUtils')
 const bodyParser = require('body-parser')
 
 const server = require('http').Server(app);
@@ -17,7 +18,9 @@ const socketEventsEmitter = new MyEmitter();
 let STATE = {
     redundancyFactors: {},
     config : {},
-    apps : []
+    apps : [],
+    socketMap : [],
+    pendingResults : {}
 }
 
 DBUtils.init().then(() => {
@@ -88,9 +91,10 @@ function newConfigCallback(response){
     if(!STATE.apps.includes(appName)){
         STATE.apps.push(appName);
     }
-    STATE.redundancyFactors[appName]=response.redundancyFactor;
+    STATE.redundancyFactors[appName]=parseInt(response.redundancyFactor);
     delete response['redundancyFactor'];
     STATE.config[appName]=response;
+    STATE.pendingResults[appName]=[]
     socketEventsEmitter.emit('newConfig')
     const nsp = io.of(`/${appName}`);
     nsp.on('connection', socketHandler)
@@ -102,9 +106,12 @@ function initSocketsAndHTTP(configuredState){
     })
 
     STATE.apps = [];
+
     for(let app in STATE.config){
         const nsp = io.of('/'+app);
         STATE.apps.push(app)
+        STATE.pendingResults[app]=[]
+        STATE.socketMap[app]=[]
         nsp.on('connection', socketHandler)
     }
     const nsp = io.of('/random');
@@ -114,10 +121,12 @@ function initSocketsAndHTTP(configuredState){
 }
 
 function socketHandler(socket){
-    socket.ip = socket.handshake.address;
+    socket.ip = socket.handshake.address
+        + Math.random(); //for debug only
     console.log('New connection from ' + socket.ip);
     const nsp = this;
     socket.appName = nsp.name !== '/random' ? nsp.name.split('/').join('') : STATE.apps[Math.floor((Math.random() * STATE.apps.length))]
+    STATE.socketMap[socket.appName].push(socket)
     console.log(socket.appName)
     let resultsCount = 0
     let lastResultsCount = 0
@@ -161,14 +170,22 @@ function socketHandler(socket){
         resultsCount++;
         const username = socket.povocopData ? socket.povocopData.povocopusername : 'anonymous'
         console.log('results',results)
+        const needsVerification = STATE.redundancyFactors[socket.appName] != 0;
+        const approved = !needsVerification;
         DBUtils.insertResult({
             username: username,
             result: results,
+            approved : approved
+        },function(result){
+            if(needsVerification){ResultUtils.newResultHandler(result,STATE,socket)}
         })
+
         if(STATE.config[socket.appName].includesInputData){
             DataUtils.sendInputDataToSingleWorker(STATE,socket,results.workerNum)
         }
     })
+    socket.on('verified',(result)=>{ResultUtils.verifyHandler(result,STATE,socket)});
+
     let interval = setInterval(() => {
         if(!socket.povocopData){
             return
@@ -181,8 +198,9 @@ function socketHandler(socket){
     },1000*20*1)
 
     socket.on('disconnect',()=>{
-        console.log("disconnected!",socket.povocopData ? socket.povocopData.povocopusername : 'anonymous')
+        console.log("disconnected!",socket.povocopData ? socket.povocopData.povocopusername : 'anonymous',socket.id)
         clearInterval(interval);
         interval = null;
+        STATE.socketMap[socket.appName] = STATE.socketMap[socket.appName].filter(item => item.id !== socket.id)
     })
 }

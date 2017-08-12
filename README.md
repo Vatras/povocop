@@ -18,8 +18,10 @@ TODO:
 [x] config to be changed after altering it in db
 [x] getting input data (not assigned) from DB and send it to users - field to which worker goes
 [] result browsing and sorting it by inputData_id
-[] method in worker to fetch results from db (for genetic alg) - alter the config instead and make users verify before
+[] programmistic config change should optionally terminate the workers
+[] optionally provide the last result in config and onConfig invoke on every new (default: no)
 [] Disconnect events handling
+[] cache update after giving 500 inputs
 [x] Redundancy factor - socket id usage? mac adress usage?
 [] browser plugin refactor
 [] intensity of computation - CPU usage selection
@@ -40,8 +42,10 @@ TODO:
 [] securing management and results enpoints with JWT
 [] check if sequelize prevents sql injection
 [] documentation + examples based on created algs
-
+[] timeouts on on results computation and on validating results
 SEPTEMBER:
 [] highlight textareas
 [] csses
 [] saving showCustomFunctionField
+[] validation - if user has redundancy factor but no onValidate - warn etc.
+[] ranking najlepszych userow - podpiac jakiegos redisa?

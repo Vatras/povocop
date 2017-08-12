@@ -35,9 +35,15 @@
   function initWorkersHandlers() {
     webWorkers.forEach(function (webWorker) {
       webWorker.onmessage = function (e) {
-        console.log('onmessage', e)
-        e.data.workerNum = this.num;
-        socket.emit('results',e.data)
+        if(e.data.type !== 'verification'){
+          console.log('onmessage', e)
+          e.data.workerNum = this.num;
+          socket.emit('results',e.data)
+        }else{
+          console.log('verified', e)
+          socket.emit('verified',e.data)
+        }
+
       }
       webWorker.onerror = function (e) {
         console.log('Error: Line ' + e.lineno + ' in ' + e.filename + ': ' + e.message);
@@ -46,6 +52,16 @@
   }
 
   function initWorkers(code) {
+    code+="\n\n" +
+     "self.onmessage = function(e) {\n" +
+      "\tvar functionMap = {\n" +
+      "\t\t'inputData': 'ondata',\n"+
+      "\t\t'computationConfig': 'onconfig',\n"+
+      "\t\t'verify': 'onverify'\n"+
+      "\t}\n"+
+    "\tvar funName = functionMap[e.data.msgType];\n"+
+    "\tself[funName](e.data);\n"+
+  "}";
     var blob = new Blob([code], {type: "application/javascript"});
 
     if(webWorkers.length>0){
@@ -89,6 +105,11 @@
       data.msgType='inputData';
       data.inputData = JSON.parse(data.inputData.data)
       passDataToWorkers(data,data.workerNum);
+    })
+    socket.on('verify', function (data) {
+      console.log('verify',data)
+      data.msgType='verify';
+      passDataToWorkers(data,Math.floor(Math.random()*webWorkers.length));
     })
     socket.on('token',function(token){
       setCookie('povocoptoken', token)

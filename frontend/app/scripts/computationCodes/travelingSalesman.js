@@ -26,7 +26,17 @@ self.onconfig = function(data){
 self.ondata = function(data){
   main(data.inputData);
 }
-
+function verify(data){
+  return true;
+}
+self.onverify = function(data){
+  var status = verify(data);
+  self.postMessage({
+    type : 'verification',
+    data : data,
+    status : status
+  });
+}
 self.onmessage = function(e) {
   var funName = e.data.msgType === 'inputData' ? 'ondata' : 'onconfig';
   self[funName](e.data)
