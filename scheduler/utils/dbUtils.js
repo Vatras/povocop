@@ -13,7 +13,6 @@ const Result = sequelize.define('result', {
     result: Sequelize.JSON,
     uuid: {type: Sequelize.UUID, allowNull: false, defaultValue: Sequelize.UUIDV4},
     approved: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
-    valid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
 });
 const InputData = sequelize.define('InputData', {
     data: Sequelize.JSON,
@@ -71,11 +70,13 @@ function insertConfigData(data,cb){
     console.log(JSON.stringify(data))
     upsert(data, { "appName" : data.appName})
 }
-function insertResult(data){
-    Result.create(data)
-    Result.findOne().then(res => {
-        const response = res ? res.dataValues : null;
-        console.log(response);
+function insertResult(data,cb){
+    Result.create(data).then(res => {
+        // const response = res ? res.dataValues : null;
+        const response = res.get({
+            plain: true
+        })
+        cb(response)
     });
 }
 function deleteInputData(appName,cb){

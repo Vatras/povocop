@@ -18,7 +18,7 @@ function addConfigDataToState(STATE){
             let configs = res || [];
             STATE.config = {}
             configs.forEach(function(val){
-                STATE.redundancyFactors[val.dataValues.appName]=val.dataValues.redundancyFactor;
+                STATE.redundancyFactors[val.dataValues.appName]=parseInt(val.dataValues.redundancyFactor);
                 delete val.dataValues.redundancyFactor;
                 STATE.config[val.dataValues.appName]=val.dataValues;
             })
