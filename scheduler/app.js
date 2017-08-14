@@ -1,3 +1,5 @@
+"use strict";
+
 const express = require('express')
 const app = express()
 const port = 9000;
@@ -24,7 +26,8 @@ let STATE = {
 }
 
 DBUtils.init().then(() => {
-    DataUtils.init(STATE).then(initSocketsAndHTTP);} );
+    DataUtils.init(STATE).then(initSocketsAndHTTP);
+});
 
 
 app.use(bodyParser.json({limit: '50mb', extended: true, parameterLimit:500000}));
@@ -110,7 +113,6 @@ function initSocketsAndHTTP(configuredState){
     for(let app in STATE.config){
         const nsp = io.of('/'+app);
         STATE.apps.push(app)
-        STATE.pendingResults[app]=[]
         STATE.socketMap[app]=[]
         nsp.on('connection', socketHandler)
     }
@@ -147,6 +149,7 @@ function socketHandler(socket){
             const tokenToSend = TokenUtils.createToken(socket,numOfCpus)
             socket.emit('token', tokenToSend);
             socket.emit('computationConfig', STATE.config[socket.appName]);
+            ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,numOfCpus)
             if(STATE.config[socket.appName].includesInputData){
                 DataUtils.sendInputDataToWorkers(STATE,socket,numOfCpus)
             }
@@ -156,12 +159,14 @@ function socketHandler(socket){
         const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus)
         socket.emit('token', tokenToSend)
         socket.emit('computationConfig', STATE.config[socket.appName]);
+        ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,decodedToken.numOfCpus)
         if(STATE.config[socket.appName].includesInputData){
             DataUtils.sendInputDataToWorkers(STATE,socket,decodedToken.numOfCpus)
         }
     }else{
         socket.povocopData=decodedToken;
         socket.emit('computationConfig', STATE.config[socket.appName]);
+        ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,decodedToken.numOfCpus)
         if(STATE.config[socket.appName].includesInputData){
             DataUtils.sendInputDataToWorkers(STATE,socket,decodedToken.numOfCpus)
         }
@@ -174,9 +179,12 @@ function socketHandler(socket){
         const approved = !needsVerification;
         DBUtils.insertResult({
             username: username,
+            appName: socket.appName,
             result: results,
-            approved : approved
+            approved : approved,
+            ip : socket.ip
         },function(result){
+            delete result.ip;
             if(needsVerification){ResultUtils.newResultHandler(result,STATE,socket)}
         })
 
@@ -198,6 +206,7 @@ function socketHandler(socket){
     },1000*20*1)
 
     socket.on('disconnect',()=>{
+        ResultUtils.handleInputDataReassignment({inputData : socket.inputData});
         console.log("disconnected!",socket.povocopData ? socket.povocopData.povocopusername : 'anonymous',socket.id)
         clearInterval(interval);
         interval = null;

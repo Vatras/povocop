@@ -5,7 +5,9 @@ const DBUtils = require('./dbUtils')
 
 function verifyHandler(result,STATE,socket){
     const redundancyFactor = STATE.redundancyFactors[socket.appName]
-    var pendingResult = STATE.pendingResults[socket.appName].find(function(val){return val.results.uuid === result.data.uuid});
+    var pendingResult = STATE.pendingResults[socket.appName].find(function(val){
+        return val.uuid === result.data.uuid
+    });
     if(!pendingResult){return;}
 
     if(result.status){
@@ -14,12 +16,14 @@ function verifyHandler(result,STATE,socket){
         pendingResult.rejects=pendingResult.rejects ? pendingResult.rejects+1 : 1
     }
     if(pendingResult.approves  >= redundancyFactor){
-        console.log('result approved!')
+        console.log('result approved!',result.data.uuid)
+        approveResult(result);
     }
     else if(pendingResult.rejects >= redundancyFactor){
-        console.log('result rejected!')
+        console.log('result rejected!',result.data.uuid)
         // blacklist(pendingResult.inputData.assignedTo);
-        // rejectResult();
+        rejectResult(result);
+        handleInputDataReassignment({result : result})
     }
     else if(pendingResult.rejects + pendingResult.approves >= redundancyFactor){
         const randomSocketsArray = getRandomSockets(1,socket.ip,STATE.socketMap[socket.appName]);
@@ -31,7 +35,33 @@ function verifyHandler(result,STATE,socket){
         }
     }
 }
+function handleInputDataReassignment(data){
+    if(data.result){
 
+    }else{
+
+    }
+}
+function approveResult(result){
+    DBUtils.updateResult(result,{approved: true});
+}
+function rejectResult(result){
+    DBUtils.deleteResult(result,{approved: false});
+}
+function sendPendingVerificationsToAllWorkers(STATE,socket,numOfCpus){
+    for(let i=0;i<numOfCpus;i++){
+        sendPendingVerifications(STATE,socket);
+    }
+}
+function sendPendingVerifications(STATE,socket){
+    var pendingResult = STATE.pendingResults[socket.appName].find(function(val){
+        return val.verifiesLeftToBeAssigned > 0 && val.ip != socket.ip
+    });
+    if(pendingResult){
+        pendingResult.verifiesLeftToBeAssigned--;
+        socket.emit('verify',{results: pendingResult.results, uuid: pendingResult.uuid})
+    }
+}
 function newResultHandler(result,STATE,socket){
     const verifiesRemaining = STATE.redundancyFactors[socket.appName];
     const randomSocketsArray = getRandomSockets(verifiesRemaining,socket.ip,STATE.socketMap[socket.appName]);
@@ -40,7 +70,8 @@ function newResultHandler(result,STATE,socket){
     })
     STATE.pendingResults[socket.appName].push({
         results : result,
-        verifiesLeftToBeAssigned : verifiesRemaining - randomSocketsArray.length
+        verifiesLeftToBeAssigned : verifiesRemaining - randomSocketsArray.length,
+        ip : socket.ip
     })
 }
 function getRandomSockets(count,ip,socketMap){
@@ -48,5 +79,8 @@ function getRandomSockets(count,ip,socketMap){
 }
 module.exports = {
     verifyHandler: verifyHandler,
-    newResultHandler : newResultHandler
+    newResultHandler : newResultHandler,
+    sendPendingVerifications : sendPendingVerifications,
+    sendPendingVerificationsToAllWorkers : sendPendingVerificationsToAllWorkers,
+    handleInputDataReassignment : handleInputDataReassignment
 }

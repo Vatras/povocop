@@ -10,6 +10,8 @@ const sequelize = new Sequelize(CONFIG.dbName, CONFIG.dbUser, CONFIG.dbPassword,
 });
 const Result = sequelize.define('result', {
     username: Sequelize.STRING,
+    appName: Sequelize.STRING,
+    ip: Sequelize.STRING,
     result: Sequelize.JSON,
     uuid: {type: Sequelize.UUID, allowNull: false, defaultValue: Sequelize.UUIDV4},
     approved: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
@@ -110,6 +112,12 @@ function getConfigData(appName,cb){
         });
     }
 }
+function getPendingResultsForApp(appName,cb){
+    Result.findAll({where : {appName : appName, approved : false}}).then(res => {
+        // console.log(res);
+        cb(res)
+    });
+}
 function getResults(appName,cb){
     Result.findAll({}).then(res => {
         // console.log(res);
@@ -140,14 +148,27 @@ function getInputData(appName,cb,options = {}){
         });
     }
 }
+function updateResult(result){
+    Result.update( {approved: true}, {where: {uuid: result.data.uuid}} )
+        .then(function(obj) {
+        })
+}
+function deleteResult(result){
+    Result.destroy({where : {uuid: result.data.uuid}}).then(res => {
+        console.log("removed rejected result",res)
+    });
+}
 module.exports = {
     assignInputData : assignInputData,
     init: init,
     getResults: getResults,
     getConfigData : getConfigData,
     getInputData: getInputData,
+    getPendingResultsForApp : getPendingResultsForApp,
     deleteInputData : deleteInputData,
     insertInputData : insertInputData,
     insertResult : insertResult,
-    insertConfigData : insertConfigData
+    insertConfigData : insertConfigData,
+    deleteResult : deleteResult,
+    updateResult : updateResult
 }

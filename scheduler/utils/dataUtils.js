@@ -7,11 +7,26 @@ function init(STATE){
     return new Promise((resolve, reject) => {
         addConfigDataToState(STATE).then(function(stateWithConfig){
             addInputDataToState(stateWithConfig).then(function(stateWithInputData){
-                resolve(stateWithInputData);
+                addPendingResultsToState(stateWithInputData).then(function(stateWithPendingResults){
+                    resolve(stateWithPendingResults);
+               });
             });
         });
-    });
+        })
 }
+function addPendingResultsToState(STATE){
+    return new Promise((resolve, reject) => {
+        let apps = []
+        for(let app in STATE.config){
+            apps.push(app);
+        }
+        getPendingResultsForAllApps(STATE,apps).then(function(pendingResults){
+            STATE.pendingResults = pendingResults
+            resolve(STATE);
+        });
+    })
+}
+
 function addConfigDataToState(STATE){
     return new Promise((resolve, reject) => {
         DBUtils.getConfigData(null,function(res){
@@ -32,7 +47,7 @@ function addInputDataToState(STATE){
         for(let app in STATE.config){
             apps.push(app);
         }
-        STATE.cachedInputData = getInputsForAllApps(apps).then(function(inputData){
+        getInputsForAllApps(apps).then(function(inputData){
             STATE.cachedInputData = inputData
             resolve(STATE);
         });
@@ -63,6 +78,41 @@ function getInputsForAllApps(apps){
                         resolve(inputData)
                     }
                 }, {getNotAssigned: true, limit: CONFIG.cachedInputDataSize})
+            })(app)
+        })
+    })
+}
+function getPendingResultsForAllApps(STATE,apps){
+    return new Promise((resolve, reject) => {
+        let pendingResults = {}
+        if(apps.length === 0){
+            resolve(pendingResults)
+        }
+        apps.forEach(function(app){
+            (function(appName){
+                DBUtils.getPendingResultsForApp(app, function (res) {
+                    const redundancyFactor = STATE.redundancyFactors[app];
+                    const results = res;
+                    if(results.length>0){
+                        results.forEach(function (val, idx) {
+                            if (idx === 0) {
+                                pendingResults[appName] = [];
+                            }
+                            pendingResults[appName].push({
+                                results : val.dataValues.result,
+                                verifiesLeftToBeAssigned : redundancyFactor,
+                                ip : val.dataValues.ip,
+                                uuid : val.dataValues.uuid
+                            });
+                        })
+                    }else{
+                        pendingResults[appName] = [];
+                    }
+                    const allAppsDataFetched = apps.length === Object.keys(pendingResults).length
+                    if(allAppsDataFetched){
+                        resolve(pendingResults)
+                    }
+                })
             })(app)
         })
     })

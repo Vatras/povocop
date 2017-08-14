@@ -17,11 +17,14 @@ TODO:
 [x] code to be send after user connects
 [x] config to be changed after altering it in db
 [x] getting input data (not assigned) from DB and send it to users - field to which worker goes
+[] CRUCIAL reassigning verification and inputData
+[] CRUCIAL cache update after giving 500 inputs
+[] CRUCIAL optionally provide the last approved result in config and onConfig invoke on every new (default: no)
+[] CRUCIAL programmistic config change should optionally terminate the workers
+[] sending random pendingVerifies
+[] if redundancyFactor == 1 and rejected - make a double verification
 [] result browsing and sorting it by inputData_id
-[] programmistic config change should optionally terminate the workers
-[] optionally provide the last result in config and onConfig invoke on every new (default: no)
 [] Disconnect events handling
-[] cache update after giving 500 inputs
 [x] Redundancy factor - socket id usage? mac adress usage?
 [] browser plugin refactor
 [] intensity of computation - CPU usage selection
@@ -29,6 +32,7 @@ TODO:
 [] tracking user's performance, adaptive scheduling
 [] db replication and failover
 [] own input Data as array
+[] add a field in results - from which domain was the result produced (from header in sockets)
 [] function to generate custom inputData
 [x] submission of computation code as a service, not file
 [] validation of submitted code
@@ -49,3 +53,4 @@ SEPTEMBER:
 [] saving showCustomFunctionField
 [] validation - if user has redundancy factor but no onValidate - warn etc.
 [] ranking najlepszych userow - podpiac jakiegos redisa?
+[] protect results verifies to not be sent duplicated by same ip (even generate another uuid for each one)
