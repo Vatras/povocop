@@ -8,6 +8,9 @@ function verifyHandler(result,STATE,socket){
     var pendingResult = STATE.pendingResults[socket.appName].find(function(val){
         return val.uuid === result.data.uuid
     });
+    socket.results = socket.results.filter((val)=>{
+        return val.uuid != result.data.uuid
+    })
     if(!pendingResult){return;}
 
     if(result.status){
@@ -22,8 +25,8 @@ function verifyHandler(result,STATE,socket){
     else if(pendingResult.rejects >= redundancyFactor){
         console.log('result rejected!',result.data.uuid)
         // blacklist(pendingResult.inputData.assignedTo);
+        handleInputDataReassignment({result : result},socket,STATE)
         rejectResult(result);
-        handleInputDataReassignment({result : result})
     }
     else if(pendingResult.rejects + pendingResult.approves >= redundancyFactor){
         const randomSocketsArray = getRandomSockets(1,socket.ip,STATE.socketMap[socket.appName]);
@@ -35,12 +38,33 @@ function verifyHandler(result,STATE,socket){
         }
     }
 }
-function handleInputDataReassignment(data){
-    if(data.result){
+function handleInputDataReassignment(data, socket, STATE) {
+    if (data.result) {
+        DBUtils.getInputDataForResult(data.result,function(dbInputData){
+            DBUtils.resetAssignment(dbInputData.dataValues).then(()=>{
+                STATE.cachedInputData[socket.appName].push(dbInputData.dataValues);
+            })
+        })
+    } else if (data.inputData){
+        socket.inputData.filter((val)=>{return val != null}).forEach((val)=>{
 
-    }else{
-
+            ((inputDataValue) =>{
+                DBUtils.resetAssignment(inputDataValue).then(()=>{
+                    STATE.cachedInputData[socket.appName].push(inputDataValue);
+                })
+            })(val)
+        })
     }
+
+}
+function handleResultVerificationReassignment(data, socket, STATE) {
+    socket.results.forEach((result)=>{
+        let resultToChange = STATE.pendingResults[socket.appName].find(function(val){
+            return val.uuid == result.uuid
+        });
+        resultToChange.verifiesLeftToBeAssigned +=1;
+        resultToChange.ip ='';
+    })
 }
 function approveResult(result){
     DBUtils.updateResult(result,{approved: true});
@@ -60,6 +84,7 @@ function sendPendingVerifications(STATE,socket){
     if(pendingResult){
         pendingResult.verifiesLeftToBeAssigned--;
         socket.emit('verify',{results: pendingResult.results, uuid: pendingResult.uuid})
+        socket.results.push({results: pendingResult.results, uuid: pendingResult.uuid})
     }
 }
 function newResultHandler(result,STATE,socket){
@@ -67,6 +92,7 @@ function newResultHandler(result,STATE,socket){
     const randomSocketsArray = getRandomSockets(verifiesRemaining,socket.ip,STATE.socketMap[socket.appName]);
     randomSocketsArray.forEach(function(randomSocket){
         randomSocket.emit('verify',result)
+        randomSocket.results.push(result);
     })
     STATE.pendingResults[socket.appName].push({
         results : result,
@@ -82,5 +108,6 @@ module.exports = {
     newResultHandler : newResultHandler,
     sendPendingVerifications : sendPendingVerifications,
     sendPendingVerificationsToAllWorkers : sendPendingVerificationsToAllWorkers,
-    handleInputDataReassignment : handleInputDataReassignment
+    handleInputDataReassignment : handleInputDataReassignment,
+    handleResultVerificationReassignment : handleResultVerificationReassignment
 }

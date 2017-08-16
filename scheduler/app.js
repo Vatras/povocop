@@ -125,6 +125,7 @@ function initSocketsAndHTTP(configuredState){
 function socketHandler(socket){
     socket.ip = socket.handshake.address
         + Math.random(); //for debug only
+    socket.results = [];
     console.log('New connection from ' + socket.ip);
     const nsp = this;
     socket.appName = nsp.name !== '/random' ? nsp.name.split('/').join('') : STATE.apps[Math.floor((Math.random() * STATE.apps.length))]
@@ -147,6 +148,7 @@ function socketHandler(socket){
         socket.emit('computeNumOfCpu', {});
         socket.once('numOfCpus', (numOfCpus) => {
             const tokenToSend = TokenUtils.createToken(socket,numOfCpus)
+            socket.inputData = new Array(numOfCpus);
             socket.emit('token', tokenToSend);
             socket.emit('computationConfig', STATE.config[socket.appName]);
             ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,numOfCpus)
@@ -157,6 +159,7 @@ function socketHandler(socket){
         });
     }else if(!isUsernameInRequest){
         const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus)
+        socket.inputData = new Array(decodedToken.numOfCpus);
         socket.emit('token', tokenToSend)
         socket.emit('computationConfig', STATE.config[socket.appName]);
         ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,decodedToken.numOfCpus)
@@ -165,6 +168,7 @@ function socketHandler(socket){
         }
     }else{
         socket.povocopData=decodedToken;
+        socket.inputData = new Array(decodedToken.numOfCpus)
         socket.emit('computationConfig', STATE.config[socket.appName]);
         ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,decodedToken.numOfCpus)
         if(STATE.config[socket.appName].includesInputData){
@@ -184,8 +188,11 @@ function socketHandler(socket){
             approved : approved,
             ip : socket.ip
         },function(result){
-            delete result.ip;
-            if(needsVerification){ResultUtils.newResultHandler(result,STATE,socket)}
+            const workerNum = results.workerNum;
+            const connectedInputData = socket.inputData[workerNum];
+            DataUtils.removeAssignment(socket,results,result,connectedInputData);
+            delete result.dataValues.ip;
+            if(needsVerification){ResultUtils.newResultHandler(result.dataValues,STATE,socket)}
         })
 
         if(STATE.config[socket.appName].includesInputData){
@@ -206,7 +213,8 @@ function socketHandler(socket){
     },1000*20*1)
 
     socket.on('disconnect',()=>{
-        ResultUtils.handleInputDataReassignment({inputData : socket.inputData});
+        ResultUtils.handleInputDataReassignment({inputData : socket.inputData},socket, STATE);
+        ResultUtils.handleResultVerificationReassignment({results : socket.results},socket, STATE);
         console.log("disconnected!",socket.povocopData ? socket.povocopData.povocopusername : 'anonymous',socket.id)
         clearInterval(interval);
         interval = null;

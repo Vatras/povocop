@@ -119,6 +119,7 @@ function getPendingResultsForAllApps(STATE,apps){
 }
 function getInputData(STATE,socket,numOfCpus){
     const appName = socket.appName;
+    cacheMoreInputData(STATE,appName,numOfCpus);
     let toSend = STATE.cachedInputData[appName].splice(0,numOfCpus);
     const dataIds = toSend.map(function(item){
         return item.id
@@ -126,13 +127,24 @@ function getInputData(STATE,socket,numOfCpus){
     DBUtils.assignInputData(appName,dataIds,socket.ip)
     return toSend.length !== 0 ? toSend : null
 }
+function cacheMoreInputData(STATE,appName,numOfCpus){
+    if(STATE.cachedInputData[appName].length >= CONFIG.minimumCachedInputDataSize && STATE.cachedInputData[appName].length - numOfCpus < CONFIG.minimumCachedInputDataSize  ){
+        console.log('caching more data');
+        DBUtils.getInputData(appName, function (res) {
+            const idsArray = STATE.cachedInputData[appName].map(val =>val.id);
+            const fetchedData = res.filter (value => idsArray.indexOf(value.id) == -1);
+            STATE.cachedInputData[appName] = STATE.cachedInputData[appName].concat(fetchedData);
+        },{limit : CONFIG.cachedInputDataSize - CONFIG.minimumCachedInputDataSize});
+    }
 
+}
 function sendInputDataToWorkers(STATE,socket,numOfCpus){
     const inputDataToSend = getInputData(STATE,socket,numOfCpus)
     if(inputDataToSend){
         for(let i=0;i<numOfCpus;i++){
             if(i < inputDataToSend.length){
                 socket.emit('inputData', {workerNum: i, inputData : inputDataToSend[i]});
+                socket.inputData[i] = inputDataToSend[i];
             }
         }
     }
@@ -141,11 +153,18 @@ function sendInputDataToSingleWorker(STATE,socket,workerNum){
     const inputDataToSend = getInputData(STATE,socket,1)
     if(inputDataToSend){
         socket.emit('inputData', {workerNum: workerNum, inputData : inputDataToSend[0]});
+        socket.inputData[workerNum] = inputDataToSend[0];
     }
+}
+function removeAssignment(socket, result,dbResult,connectedInputData){
+    DBUtils.associateResultWithInput(dbResult,connectedInputData)
+    const workerNum = result.workerNum;
+    socket.inputData[workerNum] = null;
 }
 module.exports = {
     init: init,
     getInputData : getInputData,
+    removeAssignment : removeAssignment,
     sendInputDataToWorkers : sendInputDataToWorkers,
     sendInputDataToSingleWorker : sendInputDataToSingleWorker
 }

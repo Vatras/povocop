@@ -17,8 +17,8 @@ TODO:
 [x] code to be send after user connects
 [x] config to be changed after altering it in db
 [x] getting input data (not assigned) from DB and send it to users - field to which worker goes
-[] CRUCIAL reassigning verification and inputData
-[] CRUCIAL cache update after giving 500 inputs
+[x] CRUCIAL reassigning verification and inputData
+[x] CRUCIAL cache update after having only minimumCachedInputDataSize inputs
 [] CRUCIAL optionally provide the last approved result in config and onConfig invoke on every new (default: no)
 [] CRUCIAL programmistic config change should optionally terminate the workers
 [] sending random pendingVerifies
@@ -27,6 +27,7 @@ TODO:
 [] Disconnect events handling
 [x] Redundancy factor - socket id usage? mac adress usage?
 [] browser plugin refactor
+[] permit user to connect from different tabs
 [] intensity of computation - CPU usage selection
 [x] tracking user's performance: a CPU number test
 [] tracking user's performance, adaptive scheduling

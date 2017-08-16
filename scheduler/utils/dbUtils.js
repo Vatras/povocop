@@ -28,7 +28,7 @@ const ComputationConfig = sequelize.define('ComputationConfig', {
     appName: Sequelize.STRING,
     includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
 });
-
+Result.belongsTo(InputData, {as: 'InputData'});
 function createTable(resolve){
     Result.sync();
     InputData.sync()
@@ -49,6 +49,13 @@ function init(){
             });
     })
 
+}
+function associateResultWithInput(result,input){
+    InputData.findOne({where:{ id: input.id}}).then((inputObject)=>{
+        result.setInputData(inputObject).then((res)=>
+            console.log(res)
+        );
+    });
 }
 function insertConfigData(data,cb){
     function upsert(values, condition) {
@@ -74,11 +81,7 @@ function insertConfigData(data,cb){
 }
 function insertResult(data,cb){
     Result.create(data).then(res => {
-        // const response = res ? res.dataValues : null;
-        const response = res.get({
-            plain: true
-        })
-        cb(response)
+        cb(res)
     });
 }
 function deleteInputData(appName,cb){
@@ -114,13 +117,11 @@ function getConfigData(appName,cb){
 }
 function getPendingResultsForApp(appName,cb){
     Result.findAll({where : {appName : appName, approved : false}}).then(res => {
-        // console.log(res);
         cb(res)
     });
 }
 function getResults(appName,cb){
     Result.findAll({}).then(res => {
-        // console.log(res);
         cb(res)
     });
 }
@@ -158,17 +159,36 @@ function deleteResult(result){
         console.log("removed rejected result",res)
     });
 }
+function getInputDataForResult(result,cb){
+    Result.findOne({where:{ uuid: result.data.uuid}}).then(dbResult =>{
+        if(dbResult){
+            dbResult.getInputData().then(inputData=>{
+                cb(inputData)
+            })
+        }else{
+            console.log('no dbResult')
+        }
+
+    })
+}
+
+function resetAssignment(inputData,cb){
+    return InputData.update({assignedTo: ''},{where:{id :inputData.id}})
+}
 module.exports = {
     assignInputData : assignInputData,
-    init: init,
+    associateResultWithInput : associateResultWithInput,
+    deleteResult : deleteResult,
     getResults: getResults,
+    getInputDataForResult : getInputDataForResult,
     getConfigData : getConfigData,
     getInputData: getInputData,
     getPendingResultsForApp : getPendingResultsForApp,
     deleteInputData : deleteInputData,
+    init: init,
     insertInputData : insertInputData,
     insertResult : insertResult,
     insertConfigData : insertConfigData,
-    deleteResult : deleteResult,
+    resetAssignment : resetAssignment,
     updateResult : updateResult
 }
