@@ -2,11 +2,12 @@
  * Created by pjesek on 12.08.17.
  */
 const DBUtils = require('./dbUtils')
+const socketEventsEmitter = require('./socketEventEmitter')
 
 function verifyHandler(result,STATE,socket){
     const redundancyFactor = STATE.redundancyFactors[socket.appName]
     var pendingResult = STATE.pendingResults[socket.appName].find(function(val){
-        return val.uuid === result.data.uuid
+        return val.uuid == result.data.uuid
     });
     socket.results = socket.results.filter((val)=>{
         return val.uuid != result.data.uuid
@@ -20,7 +21,7 @@ function verifyHandler(result,STATE,socket){
     }
     if(pendingResult.approves  >= redundancyFactor){
         console.log('result approved!',result.data.uuid)
-        approveResult(result);
+        approveResult(result,socket.appName,STATE);
     }
     else if(pendingResult.rejects >= redundancyFactor){
         console.log('result rejected!',result.data.uuid)
@@ -68,8 +69,15 @@ function handleResultVerificationReassignment(data, socket, STATE) {
         }
     })
 }
-function approveResult(result){
-    DBUtils.updateResult(result,{approved: true});
+function approveResult(result,appName,STATE){
+    DBUtils.approveResult(result,function(dbResult){
+        DBUtils.setLatestResultToConfig(appName,dbResult,function(){
+            if(STATE.config[appName].provideLastResultInConfig == true){
+                STATE.config[appName].lastApprovedResult = {result: dbResult.dataValues.result, inputData: dbResult.InputData ? dbResult.InputData.dataValues.data : null};
+                socketEventsEmitter.emit('newConfig');
+            }
+        });
+    });
 }
 function rejectResult(result){
     DBUtils.deleteResult(result,{approved: false});
@@ -94,7 +102,7 @@ function newResultHandler(result,STATE,socket,connectedInputData){
     console.log('new result from',socket.id)
     const verifiesRemaining = STATE.redundancyFactors[socket.appName];
     const randomSocketsArray = getRandomSockets(verifiesRemaining,socket.ip,STATE.socketMap[socket.appName]);
-    result.inputData = connectedInputData.data
+    result.inputData = connectedInputData ? connectedInputData.data : null;
     randomSocketsArray.forEach(function(randomSocket){
         console.log('sending verification to',randomSocket.id)
         randomSocket.emit('verify',result)

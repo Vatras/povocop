@@ -36,6 +36,15 @@ function addConfigDataToState(STATE){
                 STATE.redundancyFactors[val.dataValues.appName]=parseInt(val.dataValues.redundancyFactor);
                 delete val.dataValues.redundancyFactor;
                 STATE.config[val.dataValues.appName]=val.dataValues;
+                const lastApprovedResult = STATE.config[val.dataValues.appName].LastApprovedResult;
+               STATE.config[val.dataValues.appName].lastApprovedResult = lastApprovedResult ?
+               {
+                   result : lastApprovedResult.dataValues.result.results,
+                   inputData: lastApprovedResult.InputData ? lastApprovedResult.InputData.dataValues.data : {}
+               } : {}
+               if(STATE.config[val.dataValues.appName].provideLastResultInConfig === false){
+                   delete STATE.config[val.dataValues.appName].lastApprovedResult;
+               }
             })
             resolve(STATE)
         })

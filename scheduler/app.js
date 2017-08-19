@@ -13,10 +13,8 @@ const bodyParser = require('body-parser')
 
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
-const EventEmitter = require('events');
 
-class MyEmitter extends EventEmitter {}
-const socketEventsEmitter = new MyEmitter();
+const socketEventsEmitter = require('./utils/socketEventEmitter')
 let STATE = {
     redundancyFactors: {},
     config : {},
@@ -99,8 +97,22 @@ function newConfigCallback(response){
     }
     STATE.redundancyFactors[appName]=parseInt(response.redundancyFactor);
     delete response['redundancyFactor'];
-    STATE.config[appName]=response;
-    socketEventsEmitter.emit('newConfig')
+    STATE.config[appName] = STATE.config[appName] || {}
+    const lastConfigProvidedResult = STATE.config[appName]['provideLastResultInConfig'];
+    Object.keys(response).forEach(function(key){
+        STATE.config[appName][key] = response[key];
+    })
+    const provideResult = STATE.config[appName]['provideLastResultInConfig'];
+    STATE.config[appName]['lastApprovedResult'] = provideResult ? STATE.config[appName]['lastApprovedResult'] : {} ;
+    if(!lastConfigProvidedResult && provideResult){
+        DBUtils.getLastApprovedResult(appName,function(lastResult){
+            STATE.config[appName]['lastApprovedResult'] = lastResult;
+            socketEventsEmitter.emit('newConfig');
+        })
+    }
+    else{
+        socketEventsEmitter.emit('newConfig');
+    }
 }
 function initSocketsAndHTTP(configuredState){
     STATE = configuredState;
@@ -190,14 +202,16 @@ function socketHandler(socket){
         },function(result){
             const workerNum = results.workerNum;
             const connectedInputData = socket.inputData[workerNum];
+            if(!connectedInputData){
+                console.log(workerNum)
+            }
             DataUtils.removeAssignment(socket,results,result,connectedInputData);
             delete result.dataValues.ip;
             if(needsVerification){ResultUtils.newResultHandler(result.dataValues,STATE,socket,connectedInputData)}
+            if(STATE.config[socket.appName].includesInputData){
+                DataUtils.sendInputDataToSingleWorker(STATE,socket,results.workerNum)
+            }
         })
-
-        if(STATE.config[socket.appName].includesInputData){
-            DataUtils.sendInputDataToSingleWorker(STATE,socket,results.workerNum)
-        }
     })
     socket.on('verified',(result)=>{ResultUtils.verifyHandler(result,STATE,socket)});
 

@@ -3,7 +3,12 @@
   var workersWorking = false;
   var workerCount = parseInt(localStorage.getItem('povocopCpuNum')||'0');
   var socket;
+  var lastRememberedCode='';
   function passDataToWorkers(data,workerNum) {
+    if(webWorkers.length == 0){
+      initWorkers(lastRememberedCode);
+      initWorkersHandlers();
+    }
     if(typeof workerNum !== "undefined"){
       webWorkers[workerNum].postMessage(data);
     }else{
@@ -78,6 +83,7 @@
       newWorker.num=i;
       webWorkers.push(newWorker);
     }
+    lastRememberedCode = code;
   }
 
   function initSocketIO() {

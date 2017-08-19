@@ -31,6 +31,7 @@ const ComputationConfig = sequelize.define('ComputationConfig', {
     includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
 });
 Result.belongsTo(InputData, {as: 'InputData'});
+ComputationConfig.belongsTo(Result, {as: 'LastApprovedResult'});
 function createTable(resolve){
     Result.sync();
     InputData.sync()
@@ -82,6 +83,13 @@ function insertConfigData(data,cb){
     // console.log(JSON.stringify(data))
     upsert(data, { "appName" : data.appName})
 }
+function setLatestResultToConfig(appName, result, cb){
+    ComputationConfig.findOne({where: {appName: appName}}).then(compConfig => {
+        compConfig.setLastApprovedResult(result);
+        cb();
+    })
+
+}
 function insertResult(data,cb){
     Result.create(data).then(res => {
         cb(res)
@@ -108,12 +116,24 @@ function insertInputData(data,appName,cb){
 function getConfigData(appName,cb){
     const getOne = appName;
     if(getOne){
-        ComputationConfig.findOne({where : {appName : appName}},{attributes: ['appName', 'config','code','config','includesInputData']}).then(res => {
+        ComputationConfig.findOne({where : {appName : appName}}
+        // ,{attributes: ['appName', 'config','code','config','includesInputData']}
+        ).then(res => {
             res = res || {}
+            // res.lastApprovedResult = res.lastApprovedResult && res.lastApprovedResult.dataValues ? res.lastApprovedResult.dataValues : {};
             cb(res)
         });
     }else{
-        ComputationConfig.findAll({attributes: ['appName', 'config','code','config','includesInputData','redundancyFactor']}).then(res => {
+        ComputationConfig.findAll({include: [{
+            model: Result,
+            as: 'LastApprovedResult',
+            include: [{
+                model: InputData,
+                as: 'InputData',
+            }]
+        }]
+            // attributes: ['appName', 'config','code','config','includesInputData','redundancyFactor']
+        }).then(res => {
             cb(res)
         });
     }
@@ -129,6 +149,19 @@ function getPendingResultsForApp(appName,cb){
 function getResults(appName,cb){
     Result.findAll({}).then(res => {
         cb(res)
+    });
+}
+function getLastApprovedResult(appName,cb){
+    Result.max('id', {where : {appName : appName, approved : true}
+    }).then(resultId =>
+        Result.findOne({where : {id : resultId}
+            ,include: [{
+                model: InputData,
+                as: 'InputData'
+            }]})).then(result => {
+                if(result){
+                    cb({result: result.dataValues.result, inputData:result.InputData.dataValues.data})
+                }
     });
 }
 function assignInputData(appName,dataIds,ip){
@@ -155,9 +188,15 @@ function getInputData(appName,cb,options = {}){
         });
     }
 }
-function updateResult(result){
-    Result.update( {approved: true}, {where: {uuid: result.data.uuid}} )
-        .then(function(obj) {
+function approveResult(result,cb){
+    Result.findOne({where: {uuid: result.data.uuid},include: [{
+        model: InputData,
+        as: 'InputData',
+    }]} )
+        .then(dbResult =>
+            dbResult.set('approved',true)
+        ).then(dbApprovedResult =>{
+            cb(dbApprovedResult)
         })
 }
 function deleteResult(result){
@@ -182,10 +221,12 @@ function resetAssignment(inputData,cb){
     return InputData.update({assignedTo: ''},{where:{id :inputData.id}})
 }
 module.exports = {
+    approveResult : approveResult,
     assignInputData : assignInputData,
     associateResultWithInput : associateResultWithInput,
     deleteResult : deleteResult,
     getResults: getResults,
+    getLastApprovedResult : getLastApprovedResult,
     getInputDataForResult : getInputDataForResult,
     getConfigData : getConfigData,
     getInputData: getInputData,
@@ -196,5 +237,5 @@ module.exports = {
     insertResult : insertResult,
     insertConfigData : insertConfigData,
     resetAssignment : resetAssignment,
-    updateResult : updateResult
+    setLatestResultToConfig : setLatestResultToConfig
 }

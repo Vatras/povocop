@@ -19,8 +19,9 @@ TODO:
 [x] getting input data (not assigned) from DB and send it to users - field to which worker goes
 [x] CRUCIAL reassigning verification and inputData
 [x] CRUCIAL cache update after having only minimumCachedInputDataSize inputs
-[] CRUCIAL optionally provide the last approved result in config and onConfig invoke on every new (default: no)
+[x] CRUCIAL optionally provide the last approved result in config and onConfig invoke on every new (default: no)
 [x] CRUCIAL programmistic config change should optionally terminate the workers
+[] find out why connectedInputData is null
 [] sending random pendingVerifies
 [] if redundancyFactor == 1 and rejected - make a double verification
 [] result browsing and sorting it by inputData_id
@@ -48,11 +49,13 @@ TODO:
 [] check if sequelize prevents sql injection
 [] documentation + examples based on created algs
 [] timeouts on on results computation and on validating results
+[] code minification on config change
 SEPTEMBER:
 [] highlight textareas
 [] csses
 [] saving showCustomFunctionField
 [] validation - if user has redundancy factor but no onValidate - warn etc.
-[] ranking najlepszych userow - podpiac jakiegos redisa?
+[] best users rank - cache 10th result and if any bigger then update rank?
 [] protect results verifies to not be sent duplicated by same ip (even generate another uuid for each one)
 [] prevent inputData loss after server goes down.
+[] freeze dependencies versions in package.json
