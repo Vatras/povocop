@@ -22,7 +22,7 @@ function createToken(socket,numOfCpus){
 }
 function updateToken(socket){
     const payload = socket.povocopData
-    console.log('updating the token',payload)
+    // console.log('updating the token',payload)
     const token = jwt.encode(payload, secret);
     return token;
 }

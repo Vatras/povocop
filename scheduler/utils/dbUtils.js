@@ -26,6 +26,8 @@ const ComputationConfig = sequelize.define('ComputationConfig', {
     code: Sequelize.TEXT,
     redundancyFactor: Sequelize.NUMERIC,
     appName: Sequelize.STRING,
+    restartAllWorkersOnConfigChange: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+    provideLastResultInConfig: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
     includesInputData: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false}
 });
 Result.belongsTo(InputData, {as: 'InputData'});
@@ -50,10 +52,11 @@ function init(){
     })
 
 }
-function associateResultWithInput(result,input){
-    InputData.findOne({where:{ id: input.id}}).then((inputObject)=>{
-        result.setInputData(inputObject).then((res)=>
-            console.log(res)
+function associateResultWithInput(result,inputId){
+    InputData.findOne({where:{ id: inputId}}).then((inputObject)=>{
+        result.setInputData(inputObject).then((res)=>{
+            // console.log(res)
+            }
         );
     });
 }
@@ -76,7 +79,7 @@ function insertConfigData(data,cb){
         })
     }
 
-    console.log(JSON.stringify(data))
+    // console.log(JSON.stringify(data))
     upsert(data, { "appName" : data.appName})
 }
 function insertResult(data,cb){
@@ -87,7 +90,7 @@ function insertResult(data,cb){
 function deleteInputData(appName,cb){
     InputData.destroy({where : {appName: appName}}).then(res => {
         const response = res ? res : null;
-        console.log(response);
+        // console.log(response);
         cb(response)
     });
 }
@@ -116,7 +119,10 @@ function getConfigData(appName,cb){
     }
 }
 function getPendingResultsForApp(appName,cb){
-    Result.findAll({where : {appName : appName, approved : false}}).then(res => {
+    Result.findAll({where : {appName : appName, approved : false},include: [{
+        model: InputData,
+        as: 'InputData'
+    }]}).then(res => {
         cb(res)
     });
 }
@@ -156,7 +162,7 @@ function updateResult(result){
 }
 function deleteResult(result){
     Result.destroy({where : {uuid: result.data.uuid}}).then(res => {
-        console.log("removed rejected result",res)
+        console.log("removed rejected result")
     });
 }
 function getInputDataForResult(result,cb){

@@ -93,14 +93,14 @@ function newConfigCallback(response){
     const appName = response.appName
     if(!STATE.apps.includes(appName)){
         STATE.apps.push(appName);
+        STATE.pendingResults[appName] = []
+        const nsp = io.of(`/${appName}`);
+        nsp.on('connection', socketHandler)
     }
     STATE.redundancyFactors[appName]=parseInt(response.redundancyFactor);
     delete response['redundancyFactor'];
     STATE.config[appName]=response;
-    STATE.pendingResults[appName]=[]
     socketEventsEmitter.emit('newConfig')
-    const nsp = io.of(`/${appName}`);
-    nsp.on('connection', socketHandler)
 }
 function initSocketsAndHTTP(configuredState){
     STATE = configuredState;
@@ -192,7 +192,7 @@ function socketHandler(socket){
             const connectedInputData = socket.inputData[workerNum];
             DataUtils.removeAssignment(socket,results,result,connectedInputData);
             delete result.dataValues.ip;
-            if(needsVerification){ResultUtils.newResultHandler(result.dataValues,STATE,socket)}
+            if(needsVerification){ResultUtils.newResultHandler(result.dataValues,STATE,socket,connectedInputData)}
         })
 
         if(STATE.config[socket.appName].includesInputData){

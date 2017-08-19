@@ -1,5 +1,6 @@
 (function() {
   var webWorkers = [];
+  var workersWorking = false;
   var workerCount = parseInt(localStorage.getItem('povocopCpuNum')||'0');
   var socket;
   function passDataToWorkers(data,workerNum) {
@@ -52,11 +53,12 @@
   }
 
   function initWorkers(code) {
+    workersWorking = true;
     code+="\n\n" +
      "self.onmessage = function(e) {\n" +
       "\tvar functionMap = {\n" +
       "\t\t'inputData': 'ondata',\n"+
-      "\t\t'computationConfig': 'onconfig',\n"+
+      "\t\t'computationConfig': 'newConfig',\n"+
       "\t\t'verify': 'onverify'\n"+
       "\t}\n"+
     "\tvar funName = functionMap[e.data.msgType];\n"+
@@ -92,12 +94,14 @@
     return socket
   }
 
-  function socketHandlersInit(socket) {
+  function socketHandlersInit() {
     socket.on('computationConfig', function (data) {
       console.log(data)
       data.msgType='computationConfig';
-      initWorkers(data.code);
-      initWorkersHandlers();
+      if(!workersWorking || data.restartAllWorkersOnConfigChange){
+        initWorkers(data.code);
+        initWorkersHandlers();
+      }
       passDataToWorkers(data);
     })
     socket.on('inputData', function (data) {
@@ -208,8 +212,8 @@
 
 
   function init() {
-    var socket = initSocketIO();
-    socketHandlersInit(socket)
+    initSocketIO();
+    socketHandlersInit()
   }
 
   init();

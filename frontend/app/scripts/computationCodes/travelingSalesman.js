@@ -1,12 +1,12 @@
 /**
  * Created by Pjesek on 01.08.2017.
  */
-var config;
+var configuration;
 function main(inputData){
 
   console.log('inputData.val1,inputData.val2',inputData.val1,inputData.val2);
   var i=0;
-  while(i<10000000000){
+  while(i<1000000000){
     i+=1
   }
   self.postMessage({
@@ -17,29 +17,35 @@ function main(inputData){
   });
 
 }
-
-self.onconfig = function(data){
-  config = data.config;
+function onConfig(config){
+  console.log(config)
+}
+self.newConfig = function(data){
+  onConfig = onConfig || function(){}
+  onConfig(data.config)
   //setInterval(function(){main(data);})
 }
 
 self.ondata = function(data){
+  main =  main || function(){}
   main(data.inputData);
 }
-function verify(data){
+function verify(result,inputData){
+  var i=0;
+  while(i<3000000000){
+    i+=1
+  }
   return true;
 }
 self.onverify = function(data){
-  var status = verify(data);
+  var inputData = data.inputData ?
+    JSON.parse(data.inputData) : undefined
+  var status = verify(data.result,inputData);
   self.postMessage({
     type : 'verification',
     data : data,
     status : status
   });
-}
-self.onmessage = function(e) {
-  var funName = e.data.msgType === 'inputData' ? 'ondata' : 'onconfig';
-  self[funName](e.data)
 }
 
 // function (start,end,modulo){

@@ -62,8 +62,10 @@ function handleResultVerificationReassignment(data, socket, STATE) {
         let resultToChange = STATE.pendingResults[socket.appName].find(function(val){
             return val.uuid == result.uuid
         });
-        resultToChange.verifiesLeftToBeAssigned +=1;
-        resultToChange.ip ='';
+        if(resultToChange){
+            resultToChange.verifiesLeftToBeAssigned +=1;
+            resultToChange.ip ='';
+        }
     })
 }
 function approveResult(result){
@@ -83,14 +85,18 @@ function sendPendingVerifications(STATE,socket){
     });
     if(pendingResult){
         pendingResult.verifiesLeftToBeAssigned--;
+        console.log('sending pending verification to',socket.id)
         socket.emit('verify',{results: pendingResult.results, uuid: pendingResult.uuid})
         socket.results.push({results: pendingResult.results, uuid: pendingResult.uuid})
     }
 }
-function newResultHandler(result,STATE,socket){
+function newResultHandler(result,STATE,socket,connectedInputData){
+    console.log('new result from',socket.id)
     const verifiesRemaining = STATE.redundancyFactors[socket.appName];
     const randomSocketsArray = getRandomSockets(verifiesRemaining,socket.ip,STATE.socketMap[socket.appName]);
+    result.inputData = connectedInputData.data
     randomSocketsArray.forEach(function(randomSocket){
+        console.log('sending verification to',randomSocket.id)
         randomSocket.emit('verify',result)
         randomSocket.results.push(result);
     })

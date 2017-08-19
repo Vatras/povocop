@@ -20,7 +20,7 @@ TODO:
 [x] CRUCIAL reassigning verification and inputData
 [x] CRUCIAL cache update after having only minimumCachedInputDataSize inputs
 [] CRUCIAL optionally provide the last approved result in config and onConfig invoke on every new (default: no)
-[] CRUCIAL programmistic config change should optionally terminate the workers
+[x] CRUCIAL programmistic config change should optionally terminate the workers
 [] sending random pendingVerifies
 [] if redundancyFactor == 1 and rejected - make a double verification
 [] result browsing and sorting it by inputData_id
@@ -55,3 +55,4 @@ SEPTEMBER:
 [] validation - if user has redundancy factor but no onValidate - warn etc.
 [] ranking najlepszych userow - podpiac jakiegos redisa?
 [] protect results verifies to not be sent duplicated by same ip (even generate another uuid for each one)
+[] prevent inputData loss after server goes down.

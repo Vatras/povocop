@@ -15,9 +15,10 @@ function getConfigData() {
     var appname = window.location.pathname.split('/')[3]
 
     ajaxRequest({url:"/config/"+ appname,method:'GET'},function(data){
-
         document.getElementById('configurationData').value = data.config ? JSON.stringify(data.config,null, 2) : '';
         document.getElementById('includesInputData').checked = data.includesInputData ? data.includesInputData : false;
+        document.getElementById('restartAllWorkersOnConfigChange').checked = data.restartAllWorkersOnConfigChange ? data.restartAllWorkersOnConfigChange : false;
+        document.getElementById('provideLastResultInConfig').checked = data.provideLastResultInConfig ? data.provideLastResultInConfig : false;
         document.getElementById('redundancyFactor').value = data.redundancyFactor ? data.redundancyFactor : 0;
         document.getElementById('code').value = data.code ? data.code : '';
     })
@@ -40,12 +41,13 @@ function saveConfigData(){
         alert('Couldn\'t parse text. It is not in valid JSON format. \nAre the variable names in quotation marks ( "" )? ')
         return;
     }
-
     var request = {};
     request.code = document.getElementById("code").value//{code: eval(document.getElementById("code").value)}
     request.redundancyFactor = document.getElementById("redundancyFactor").value;
     request.config = configDataJSON
     request.includesInputData = document.getElementById('includesInputData').checked
+    request.restartAllWorkersOnConfigChange = document.getElementById('restartAllWorkersOnConfigChange').checked
+    request.provideLastResultInConfig = document.getElementById('provideLastResultInConfig').checked
     var requestData = {
         data:{"data" : request},
         url : '/config/'+ appName,

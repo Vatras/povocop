@@ -98,6 +98,7 @@ function getPendingResultsForAllApps(STATE,apps){
                             if (idx === 0) {
                                 pendingResults[appName] = [];
                             }
+                            val.dataValues.result.inputData = val.dataValues.InputData ? val.dataValues.InputData.dataValues.data: null;
                             pendingResults[appName].push({
                                 results : val.dataValues.result,
                                 verifiesLeftToBeAssigned : redundancyFactor,
@@ -150,14 +151,19 @@ function sendInputDataToWorkers(STATE,socket,numOfCpus){
     }
 }
 function sendInputDataToSingleWorker(STATE,socket,workerNum){
+    if(typeof socket.inputData === 'undefined'){socket.inputData = []}
     const inputDataToSend = getInputData(STATE,socket,1)
     if(inputDataToSend){
+        console.log('sending data to worker ',workerNum)
         socket.emit('inputData', {workerNum: workerNum, inputData : inputDataToSend[0]});
         socket.inputData[workerNum] = inputDataToSend[0];
     }
 }
 function removeAssignment(socket, result,dbResult,connectedInputData){
-    DBUtils.associateResultWithInput(dbResult,connectedInputData)
+    console.log('removing assignment from ',result.workerNum)
+    if(connectedInputData){
+        DBUtils.associateResultWithInput(dbResult,connectedInputData.id)
+    }
     const workerNum = result.workerNum;
     socket.inputData[workerNum] = null;
 }
