@@ -5,13 +5,14 @@ const jwt = require('jwt-simple');
 const CONFIG =  require('../config')
 const secret = CONFIG.secretToSignJWT;
 const uuidv4 = require('uuid/v4');
-function createToken(socket,numOfCpus){
+function createToken(socket,numOfCpus,existingToken){
+    existingToken = existingToken || {}
     const username = socket.handshake.query.povocopusername;
     console.log("username:",username)
     const payload = {
         numOfCpus: numOfCpus,
         points: 0,
-        uuid: uuidv4()
+        uuid: existingToken.uuid || uuidv4()
     };
     if(username && username.length>0){
         payload.povocopusername = username;

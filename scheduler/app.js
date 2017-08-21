@@ -20,7 +20,8 @@ let STATE = {
     config : {},
     apps : [],
     socketMap : [],
-    pendingResults : {}
+    pendingResults : {},
+    usersOnline: {}
 }
 
 DBUtils.init().then(() => {
@@ -133,7 +134,15 @@ function initSocketsAndHTTP(configuredState){
     // io.on('connection', socketHandler)
 
 }
-
+function isUserAlreadyConnected(decodedToken,STATE,socket){
+    if(typeof STATE.usersOnline[decodedToken.uuid] !== 'undefined'){
+        socket.disconnect();
+        return true;
+    }else{
+        STATE.usersOnline[decodedToken.uuid] = socket.id;
+        return false;
+    }
+}
 function socketHandler(socket){
     socket.ip = socket.handshake.address
         + Math.random(); //for debug only
@@ -141,6 +150,12 @@ function socketHandler(socket){
     console.log('New connection from ' + socket.ip);
     const nsp = this;
     socket.appName = nsp.name !== '/random' ? nsp.name.split('/').join('') : STATE.apps[Math.floor((Math.random() * STATE.apps.length))]
+    STATE.socketMap[socket.appName] = STATE.socketMap[socket.appName] ? STATE.socketMap[socket.appName] : [];
+    if(STATE.socketMap[socket.appName].find(function(tempSocket){
+        return tempSocket.id===socket.id
+    })){
+        socket.disconnect();
+    }
     STATE.socketMap[socket.appName].push(socket)
     console.log(socket.appName)
     let resultsCount = 0
@@ -160,6 +175,7 @@ function socketHandler(socket){
         socket.emit('computeNumOfCpu', {});
         socket.once('numOfCpus', (numOfCpus) => {
             const tokenToSend = TokenUtils.createToken(socket,numOfCpus)
+            if(isUserAlreadyConnected(socket.povocopData,STATE,socket)){return;}
             socket.inputData = new Array(numOfCpus);
             socket.emit('token', tokenToSend);
             socket.emit('computationConfig', STATE.config[socket.appName]);
@@ -170,7 +186,8 @@ function socketHandler(socket){
 
         });
     }else if(!isUsernameInRequest){
-        const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus)
+        if(isUserAlreadyConnected(decodedToken,STATE,socket)){return;}
+        const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus,decodedToken)
         socket.inputData = new Array(decodedToken.numOfCpus);
         socket.emit('token', tokenToSend)
         socket.emit('computationConfig', STATE.config[socket.appName]);
@@ -179,6 +196,7 @@ function socketHandler(socket){
             DataUtils.sendInputDataToWorkers(STATE,socket,decodedToken.numOfCpus)
         }
     }else{
+        if(isUserAlreadyConnected(decodedToken,STATE,socket)){return;}
         socket.povocopData=decodedToken;
         socket.inputData = new Array(decodedToken.numOfCpus)
         socket.emit('computationConfig', STATE.config[socket.appName]);
@@ -205,10 +223,10 @@ function socketHandler(socket){
             if(!connectedInputData){
                 console.log(workerNum)
             }
-            DataUtils.removeAssignment(socket,results,result,connectedInputData);
             delete result.dataValues.ip;
             if(needsVerification){ResultUtils.newResultHandler(result.dataValues,STATE,socket,connectedInputData)}
             if(STATE.config[socket.appName].includesInputData){
+                DataUtils.removeAssignment(socket,results,result,connectedInputData);
                 DataUtils.sendInputDataToSingleWorker(STATE,socket,results.workerNum)
             }
         })
@@ -233,5 +251,6 @@ function socketHandler(socket){
         clearInterval(interval);
         interval = null;
         STATE.socketMap[socket.appName] = STATE.socketMap[socket.appName].filter(item => item.id !== socket.id)
+        delete STATE.usersOnline[socket.povocopData && socket.povocopData.uuid];
     })
 }

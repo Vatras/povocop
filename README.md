@@ -25,10 +25,10 @@ TODO:
 [] sending random pendingVerifies
 [] if redundancyFactor == 1 and rejected - make a double verification
 [] result browsing and sorting it by inputData_id
-[] Disconnect events handling
+[x] Disconnect events handling
 [x] Redundancy factor - socket id usage? mac adress usage?
 [] browser plugin refactor
-[] permit user to connect from different tabs
+[x] permit user to connect from different tabs
 [] intensity of computation - CPU usage selection
 [x] tracking user's performance: a CPU number test
 [] tracking user's performance, adaptive scheduling
@@ -59,3 +59,4 @@ SEPTEMBER:
 [] protect results verifies to not be sent duplicated by same ip (even generate another uuid for each one)
 [] prevent inputData loss after server goes down.
 [] freeze dependencies versions in package.json
+[] user can sent back only status and uuid, without result or input data

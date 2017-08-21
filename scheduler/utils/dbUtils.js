@@ -160,7 +160,7 @@ function getLastApprovedResult(appName,cb){
                 as: 'InputData'
             }]})).then(result => {
                 if(result){
-                    cb({result: result.dataValues.result, inputData:result.InputData.dataValues.data})
+                    cb({result: result.dataValues.result, inputData:result.InputData ? result.InputData.dataValues.data : {}})
                 }
     });
 }

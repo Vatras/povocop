@@ -9,10 +9,17 @@ function verifyHandler(result,STATE,socket){
     var pendingResult = STATE.pendingResults[socket.appName].find(function(val){
         return val.uuid == result.data.uuid
     });
+    const resultsBefore = socket.results.length;
     socket.results = socket.results.filter((val)=>{
         return val.uuid != result.data.uuid
     })
-    if(!pendingResult){return;}
+    const resultsAfter = socket.results.length;
+    if(!pendingResult){
+        console.log('user sent result with unknown uuid!')
+        return;
+    }else if(resultsBefore - resultsAfter != 1){
+        console.log('user already sent this result')
+    }
 
     if(result.status){
         pendingResult.approves=pendingResult.approves ? pendingResult.approves+1 : 1
@@ -33,6 +40,7 @@ function verifyHandler(result,STATE,socket){
         const randomSocketsArray = getRandomSockets(1,socket.ip,STATE.socketMap[socket.appName]);
         randomSocketsArray.forEach(function(randomSocket){
             randomSocket.emit('verify',result)
+            randomSocket.results.push(result);
         })
         if(randomSocketsArray.length == 0){
             pendingResult.verifiesLeftToBeAssigned=1;
@@ -76,6 +84,9 @@ function approveResult(result,appName,STATE){
                 STATE.config[appName].lastApprovedResult = {result: dbResult.dataValues.result, inputData: dbResult.InputData ? dbResult.InputData.dataValues.data : null};
                 socketEventsEmitter.emit('newConfig');
             }
+            STATE.pendingResults[appName] = STATE.pendingResults[appName].filter(function(val){
+                return val.uuid != result.data.uuid
+            });
         });
     });
 }

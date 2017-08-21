@@ -29,8 +29,8 @@ function calc_pi(inputData){
 
   self.postMessage({
     results:{
-      "points_inside": points_inside,
-      "points_total" : points_total
+      'points_inside': points_inside,
+      'points_total' : points_total
     }
   });
 }

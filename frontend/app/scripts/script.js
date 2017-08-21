@@ -10,6 +10,7 @@
       initWorkersHandlers();
     }
     if(typeof workerNum !== "undefined"){
+      if(!webWorkers[workerNum]){window.location.reload()}
       webWorkers[workerNum].postMessage(data);
     }else{
       webWorkers.forEach(function (webWorker) {
@@ -60,6 +61,28 @@
   function initWorkers(code) {
     workersWorking = true;
     code+="\n\n" +
+      "self.newConfig = function(data){\n" +
+      "\tonConfig = onConfig || function(){}\n" +
+      "\tif(data.lastApprovedResult && typeof data.lastApprovedResult.inputData == 'string'){\n" +
+      "\t\tdata.lastApprovedResult.inputData = JSON.parse(data.lastApprovedResult.inputData)\n" +
+      "\t}\n" +
+      " \tonConfig(data.config, data.lastApprovedResult)\n" +
+      "}\n" +
+      "  self.ondata = function(data){\n" +
+      "\tmain =  main || function(){}\n" +
+      " \tmain(data.inputData);\n" +
+      "}\n" +
+      "self.onverify = function(data){\n" +
+      "\tvar inputData = data.inputData ?\n" +
+      "\t\tJSON.parse(data.inputData) : undefined\n" +
+      "\tverify = verify ||  function verify(){return true;};\n" +
+      "\tvar status = verify(data.result,inputData);\n" +
+      "\tself.postMessage({\n" +
+      "\t\ttype : 'verification',\n" +
+      "\t\tdata : data,\n" +
+      "\t\tstatus : status\n" +
+      "\t});\n" +
+      "}\n" +
      "self.onmessage = function(e) {\n" +
       "\tvar functionMap = {\n" +
       "\t\t'inputData': 'ondata',\n"+
