@@ -1,3 +1,32 @@
+**POVOCOP** - Poznan voluntary computing platform.
+An open-source approach to allow any website to recruit its visitors to become a node in voluntary computing cluster. It provides a scheduling server to which programmer submits a code to be computed by each node, as well as the input data that will be assigned (and reassigned if the user disconnects) to every volunteer.
+
+The scheduled is dockerized as **pjesek/povocop:scheduler** application on dockerhub, so setting it up requires only to:
+```sh
+$ docker run -d --name postgres -p 5432:5432 --restart=always -e POSTGRES_DB=povocop_1 -e POSTGRES_PASSWORD=povocop -v /data/postgresql/data:/var/lib/postgresql/data postgres:9.4
+$ docker pull pjesek/povocop:scheduler
+$ docker run -dti --name povocop --link postgres:pg_ip -v ~/logs:/var/logs -p 9000:9000 \
+-e "dbName=povocop_1" \
+-e "dbUser=postgres" \
+-e "dbPassword=povocop" \
+-e "dbHost=pg_ip" \
+-e "dbLoggings=true" \
+-e "cachedInputDataSize=150" \
+-e "secretToSignJWT=112233" \
+-e "minimumCachedInputDataSize=130" \
+pjesek/povocop:scheduler
+```
+>App will run on http://127.0.0.1:9000
+
+>url to a view to submit code and set configuration to a "job"
+>/manager/config/:jobName
+
+>url to a view to submit input data to a "job"
+>/manager/data/:jobName
+
+
+This platform was created by Tomek F as the master thesis at Poznan Univeristy of Technology in 2017.
+
 
 
 
