@@ -11,7 +11,7 @@ function createToken(socket,numOfCpus,existingToken){
     console.log("username:",username)
     const payload = {
         numOfCpus: numOfCpus,
-        points: 0,
+        points: existingToken.points,
         uuid: existingToken.uuid || uuidv4()
     };
     if(username && username.length>0){

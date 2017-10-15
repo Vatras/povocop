@@ -1,10 +1,37 @@
+var emittedResults=0;
+function povocopOnclick(event){
+  console.log(event.value)
+  var povocopEvent = new CustomEvent('povocopEvent', { detail: parseInt(event.value)|| 0});
+  document.dispatchEvent(povocopEvent);
+}
+
 (function() {
   var webWorkers = [];
   var workersWorking = false;
-  var workerCount = parseInt(localStorage.getItem('povocopCpuNum')||'0');
+  var workerCount = parseInt(localStorage.getItem('choosenPovocopCpuNum') || localStorage.getItem('povocopCpuNum')||'0');
+
+
   var socket;
+  var lastConfig = null;
   var lastRememberedCode='';
+  document.addEventListener('povocopEvent', function (e) {
+    console.log(e.detail);
+    workerCount=e.detail;
+    localStorage.setItem('choosenPovocopCpuNum',workerCount)
+    socket.emit('newNumOfCpus',workerCount)
+    if(lastRememberedCode.length>0){
+      initWorkers(lastRememberedCode);
+      initWorkersHandlers();
+      if(lastConfig!=null)
+      {
+        passDataToWorkers(lastConfig);
+      }
+    }
+  }, false);
   function passDataToWorkers(data,workerNum) {
+    if(workerNum>=webWorkers.length){
+      return
+    }
     if(webWorkers.length == 0){
       initWorkers(lastRememberedCode);
       initWorkersHandlers();
@@ -18,6 +45,7 @@
       });
     }
   }
+
   function getCookie(cname) {
     var name = cname + "=";
     var decodedCookie = decodeURIComponent(document.cookie);
@@ -46,6 +74,7 @@
           console.log('onmessage', e)
           e.data.workerNum = this.num;
           socket.emit('results',e.data)
+          emittedResults+=1;
         }else{
           console.log('verified', e)
           socket.emit('verified',e.data)
@@ -114,7 +143,7 @@
     var appName = document.getElementById("povocopscript")
       && document.getElementById("povocopscript").getAttribute("appName");
     appName = appName || 'random'
-    socket = io('centos:9000/'+appName,{
+    socket = io(window.location.hostname+':9000/'+appName,{
       query:{
         povocoptoken: getCookie('povocoptoken'),
         povocopusername: getCookie('povocopusername'),
@@ -127,6 +156,7 @@
     socket.on('computationConfig', function (data) {
       console.log(data)
       data.msgType='computationConfig';
+      lastConfig=data;
       if(!workersWorking || data.restartAllWorkersOnConfigChange){
         initWorkers(data.code);
         initWorkersHandlers();
@@ -134,11 +164,22 @@
       passDataToWorkers(data);
     })
     socket.on('inputData', function (data) {
-      console.log('inputData',data)
+      console.log('inputData',data,new Date())
       data.msgType='inputData';
       data.inputData = JSON.parse(data.inputData.data)
       passDataToWorkers(data,data.workerNum);
     })
+    socket.on('newPI', function (data) {
+      console.log(data);
+      // $('#piValue').html(data)
+    });
+    socket.on('adaptiveSchedule', function (data) {
+      console.log('performance: '+Math.round((data||0)*100)+'%');
+      if(document.getElementById('povocopCpuPerf')){
+        document.getElementById('povocopCpuPerf').innerHTML='performance: '+Math.round((data||0)*100)+'%';
+      }
+      // $('#piValue').html(data)
+    });
     socket.on('verify', function (data) {
       console.log('verify',data)
       data.msgType='verify';
@@ -151,11 +192,14 @@
       findNumOfThreads(function(cpuNum){
         localStorage.setItem('povocopCpuNum',cpuNum);
         workerCount=cpuNum;
+        if(document.getElementById("cpuPovocop"+workerCount)){
+          document.getElementById("cpuPovocop"+workerCount).checked=true
+        }
         socket.emit('numOfCpus',cpuNum)
       })
     })
     socket.on('state',function(state){
-      console.log(state)
+      // console.log(state)
     })
   }
 
@@ -209,6 +253,9 @@
                 terminateWorkers(tempWorkers)
                 var endTime = new Date().getTime();
                 var resultTime = endTime - startTime;
+                if(iter==0){
+                  localStorage.setItem('singleThreadSpeed',resultTime)
+                }
                 console.log(resultTime)
                 if (lastTime != 0 && lastTime * 1.5 < resultTime) {
                   resolve(numberOfWorkers / 2)
@@ -234,12 +281,35 @@
     }
 
     startComputations().then(function (response) {
+      localStorage.setItem('cpuNumber',response)
       console.log('response', response);
       callback(response)
     })
   }
 
-
+  var htmlTemplate = '<div style="width: 100%;height: 50px;background-color: #c5c5c5;display: flex;overflow: auto;" id="topPovocopBanner">'+
+  '    <div id="povocopContent" style="margin-left: 15px; margin-top: 5px; ">Computation of PI</div>'+
+    '      <div style="margin-left: 15px;margin-top: 5px;position: absolute;right: 50%;" id="povocopCpuPerf"></div>'+
+  '      <div style="margin-left: 15px;margin-top: 5px;position: absolute;right: 6%;" id="povocopCpuDiv">'+
+  '        <input onclick="povocopOnclick(this)" type="radio" name="cpuPovocop" id="cpuPovocop0" value="none">'+
+  '        <label>NONE</label>'+
+  '        <input onclick="povocopOnclick(this)" type="radio" name="cpuPovocop" id="cpuPovocop1" value="1">'+
+  '        <label>1 CORE</label>'+
+  '        <input onclick="povocopOnclick(this)" type="radio" name="cpuPovocop" id="cpuPovocop2" value="2">'+
+  '        <label>2 CORES</label>'+
+  '        <input onclick="povocopOnclick(this)" type="radio" name="cpuPovocop" id="cpuPovocop4" value="4">'+
+  '        <label>4 CORES</label>'+
+  '        <input onclick="povocopOnclick(this)" type="radio" name="cpuPovocop" id="cpuPovocop8" value="8">'+
+  '        <label>8 CORES</label>'+
+  '      </div>'+
+  '      <span style="position: absolute;right: 2%;font-size: 30px;font-family: sans-serif;font-weight: bold;cursor: pointer;">X</span>';
+  var wrapper = document.createElement("div");
+  var list = document.getElementsByTagName("body")[0];
+  wrapper.innerHTML=htmlTemplate
+  list.insertBefore(wrapper, list.childNodes[0]);
+  if(document.getElementById("cpuPovocop"+workerCount)){
+    document.getElementById("cpuPovocop"+workerCount).checked=true
+  }
   function init() {
     initSocketIO();
     socketHandlersInit()

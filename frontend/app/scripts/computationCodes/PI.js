@@ -1,7 +1,7 @@
-var config;
-function calc_pi(inputData){
+var configuration;
+function main(){
 
-  var itEnd = config.iterationCount;
+  var itEnd = configuration.iterationCount;
   var start = new Date().getTime();
   var radius=1;
   var r = radius;
@@ -13,17 +13,15 @@ function calc_pi(inputData){
 
     var x = Math.random() * r * 2 - r;
     var y = Math.random() * r * 2 - r;
-    if (Math.pow(x, 2) + Math.pow(y, 2) < Math.pow(r, 2))
+    if (parseFloat((y * y + x*x).toFixed(15))  < parseFloat(r * r).toFixed(15))
       points_inside++;
 
-    if (points_total % itEnd == 0)
+    if (points_total == itEnd)
     {
-      if (points_total % itEnd == 0)
-      {
-        var diff = (new Date().getTime() - start)
-        console.log(diff,points_inside + "/" + points_total + " pi == " + (4 * points_inside / points_total));
-        break;
-      }
+
+      var diff = (new Date().getTime() - start)
+      console.log(diff,points_inside + "/" + points_total + " pi == " + (4 * points_inside / points_total));
+      break;
     }
   }
 
@@ -33,18 +31,14 @@ function calc_pi(inputData){
       'points_total' : points_total
     }
   });
+  setTimeout(main);
 }
-
-self.onconfig = function(data){
-  config = data.config;
-  //setInterval(function(){main(data);})
+function onConfig(config,lastResult){
+  configuration = config;
+  console.log(config)
+  setTimeout(main);
 }
+function verify(result,inputData){
 
-self.ondata = function(data){
-
-}
-
-self.onmessage = function(e) {
-  var funName = e.data.msgType === 'inputData' ? 'ondata' : 'onconfig';
-  self[funName](e.data)
+  return true;
 }

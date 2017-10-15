@@ -10,9 +10,10 @@ const DBUtils = require('./utils/dbUtils')
 const DataUtils = require('./utils/dataUtils')
 const ResultUtils = require('./utils/resultUtils')
 const bodyParser = require('body-parser')
-
+const WhichBrowser = require('which-browser');
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
+const auth = require('./utils/authUtils');
 
 const socketEventsEmitter = require('./utils/socketEventEmitter')
 let STATE = {
@@ -23,7 +24,8 @@ let STATE = {
     pendingResults : {},
     usersOnline: {}
 }
-
+console.log(`Frontend script available at: \n http://IPADDR:${port}/scripts/PovocopScript.js`)
+auth.setCredentials();
 DBUtils.init().then(() => {
     DataUtils.init(STATE).then(initSocketsAndHTTP);
 });
@@ -33,9 +35,7 @@ app.use(bodyParser.json({limit: '50mb', extended: true, parameterLimit:500000}))
 
 app.use(express.static('public'))
 app.use(cors({credentials: true, origin: true}))
-app.get('/',  (req, res) => {
-    res.send('Hello World!')
-})
+
 app.post('/data/:appname',  (req, res) => {
     const appName = req.params.appname;
     req.body.data.map(function(val){
@@ -43,6 +43,7 @@ app.post('/data/:appname',  (req, res) => {
         return val;
     })
     DBUtils.insertInputData(req.body.data,appName,function(response){
+        DataUtils.cacheMoreInputData(STATE,appName,0);
         res.json(response)
     });
 });
@@ -52,7 +53,7 @@ app.delete('/data/:appname',  (req, res) => {
         res.json({})
     });
 });
-app.post('/config/:appname',  (req, res) => {
+app.post('/config/:appname', auth.basicAuth, (req, res) => {
     const appName = req.params.appname;
     req.body.data.appName = appName;
     const redundancyFactor = req.body.data.redundancyFactor
@@ -62,27 +63,27 @@ app.post('/config/:appname',  (req, res) => {
         res.json(response)
     });
 });
-app.get('/config/:appname',  (req, res) => {
+app.get('/config/:appname', auth.basicAuth, (req, res) => {
     const appName = req.params.appname;
     DBUtils.getConfigData(appName,function(response){
         res.send(response)
     });
 });
-app.get('/data/:appname',  (req, res) => {
+app.get('/data/:appname',  auth.basicAuth, (req, res) => {
     const appName = req.params.appname;
     DBUtils.getInputData(appName,function(response){
         res.send({inputData: response})
     },{getNotAssigned : true});
 });
-app.get('/manager/config/:appname',  (req, res) => {
+app.get('/manager/config/:appname',  auth.basicAuth, (req, res) => {
     const appName = req.params.appname;
     res.sendFile(process.cwd()+'/views/computationConfig.html')
 });
-app.get('/manager/data/:appname',  (req, res) => {
+app.get('/manager/data/:appname', auth.basicAuth, (req, res) => {
     const appName = req.params.appname;
     res.sendFile(process.cwd()+'/views/inputDataView.html')
 });
-app.get('/results/:appname',  (req, res) => {
+app.get('/results/:appname', auth.basicAuth, (req, res) => {
     const appName = req.params.appname;
     DBUtils.getResults(appName,function(results){
         res.send(results)
@@ -108,17 +109,17 @@ function newConfigCallback(response){
     if(!lastConfigProvidedResult && provideResult){
         DBUtils.getLastApprovedResult(appName,function(lastResult){
             STATE.config[appName]['lastApprovedResult'] = lastResult;
-            socketEventsEmitter.emit('newConfig');
+            socketEventsEmitter.emit('newConfig'+appName);
         })
     }
     else{
-        socketEventsEmitter.emit('newConfig');
+        socketEventsEmitter.emit('newConfig'+appName);
     }
 }
 function initSocketsAndHTTP(configuredState){
     STATE = configuredState;
     server.listen(port, () => {
-        console.log(`Example app listening on port ${port}!`)
+        console.log(`Scheduler listening on port ${port}!`)
     })
 
     STATE.apps = [];
@@ -147,6 +148,8 @@ function socketHandler(socket){
     socket.ip = socket.handshake.address
         + Math.random(); //for debug only
     socket.results = [];
+    socket.times = [];
+    socket.bestTime = 9999999;
     console.log('New connection from ' + socket.ip);
     const nsp = this;
     socket.appName = nsp.name !== '/random' ? nsp.name.split('/').join('') : STATE.apps[Math.floor((Math.random() * STATE.apps.length))]
@@ -162,14 +165,16 @@ function socketHandler(socket){
     let lastResultsCount = 0
     let decodedToken=TokenUtils.validateToken(socket.handshake.query.povocoptoken);
     //for debugging - remove it later!
-    setInterval(function(){
-        nsp.emit('state', STATE);
-    },5000)
+
 
     const isTokenInRequest = decodedToken;
     const isUsernameInRequest = isTokenInRequest && decodedToken.povocopusername;
-    socketEventsEmitter.on('newConfig',() =>{
+    socketEventsEmitter.on('newConfig'+socket.appName,() =>{
         socket.emit('computationConfig', STATE.config[socket.appName]);
+    })
+    socket.on('newNumOfCpus', newNumOfCpus =>{
+        const tokenToSend = TokenUtils.createToken(socket,newNumOfCpus,socket.povocopData)
+        socket.emit('token', tokenToSend);
     })
     if(!isTokenInRequest){
         socket.emit('computeNumOfCpu', {});
@@ -177,6 +182,7 @@ function socketHandler(socket){
             const tokenToSend = TokenUtils.createToken(socket,numOfCpus)
             if(isUserAlreadyConnected(socket.povocopData,STATE,socket)){return;}
             socket.inputData = new Array(numOfCpus);
+            socket.times = new Array(numOfCpus);
             socket.emit('token', tokenToSend);
             socket.emit('computationConfig', STATE.config[socket.appName]);
             ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,numOfCpus)
@@ -185,10 +191,11 @@ function socketHandler(socket){
             }
 
         });
-    }else if(!isUsernameInRequest){
+    }else if(!isUsernameInRequest && socket.handshake.query.povocopusername){
         if(isUserAlreadyConnected(decodedToken,STATE,socket)){return;}
         const tokenToSend = TokenUtils.createToken(socket,decodedToken.numOfCpus,decodedToken)
         socket.inputData = new Array(decodedToken.numOfCpus);
+        socket.times = new Array(decodedToken.numOfCpus);
         socket.emit('token', tokenToSend)
         socket.emit('computationConfig', STATE.config[socket.appName]);
         ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,decodedToken.numOfCpus)
@@ -199,6 +206,7 @@ function socketHandler(socket){
         if(isUserAlreadyConnected(decodedToken,STATE,socket)){return;}
         socket.povocopData=decodedToken;
         socket.inputData = new Array(decodedToken.numOfCpus)
+        socket.times = new Array(decodedToken.numOfCpus);
         socket.emit('computationConfig', STATE.config[socket.appName]);
         ResultUtils.sendPendingVerificationsToAllWorkers(STATE,socket,decodedToken.numOfCpus)
         if(STATE.config[socket.appName].includesInputData){
@@ -207,6 +215,13 @@ function socketHandler(socket){
     }
     socket.on('results', (results) => {
         resultsCount++;
+        const now = new Date().getTime();
+        const lastTime = socket.times[results.workerNum] || now;
+        socket.times[results.workerNum] = now;
+        if(socket.times[results.workerNum] != lastTime && socket.times[results.workerNum]-lastTime<socket.bestTime){
+            socket.bestTime = socket.times[results.workerNum]-lastTime
+        }
+        socket.emit('adaptiveSchedule',socket.bestTime/(socket.times[results.workerNum]-lastTime));
         const username = socket.povocopData ? socket.povocopData.povocopusername : 'anonymous'
         console.log('results',results)
         const needsVerification = STATE.redundancyFactors[socket.appName] != 0;
@@ -225,6 +240,10 @@ function socketHandler(socket){
             }
             delete result.dataValues.ip;
             if(needsVerification){ResultUtils.newResultHandler(result.dataValues,STATE,socket,connectedInputData)}
+            else{
+                STATE.config[socket.appName].lastApprovedResult = {result: results, inputData: connectedInputData};
+                socketEventsEmitter.emit('newConfig'+socket.appName);
+            }
             if(STATE.config[socket.appName].includesInputData){
                 DataUtils.removeAssignment(socket,results,result,connectedInputData);
                 DataUtils.sendInputDataToSingleWorker(STATE,socket,results.workerNum)
@@ -242,7 +261,7 @@ function socketHandler(socket){
         socket.povocopData.points+=strength;
         const tokenToSend = TokenUtils.updateToken(socket)
         socket.emit('token', tokenToSend);
-    },1000*20*1)
+    },120000)
 
     socket.on('disconnect',()=>{
         ResultUtils.handleInputDataReassignment({inputData : socket.inputData},socket, STATE);

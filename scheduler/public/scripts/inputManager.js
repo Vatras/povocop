@@ -1,25 +1,29 @@
 var dataSet = [];
 var customFunctionProvided = false;
 
-// var customFunctionCodeTemplate = function(start,end,modulo){
-//     var iterator=0;
-//     while(start+iterator < end){
-//         dataSet.push({val1: (start+iterator)%modulo})
-//         iterator+=1;
-//     }
-// }
+var customFunctionCodeTemplate =
 
-var customFunctionCodeTemplate = function (start,end,modulo){
-  var iterator=0;
-  while(start+iterator < end){
-    for(i=start;i<end;i++)
-      if(i!=iterator)
-        dataSet.push({val1: (start+iterator),
-          val2: (start+i)
-        })
-    iterator+=1;
-  }
-}
+    function customFunctionCodeTemplate(start,end,factor){
+       var iterator=0;
+       while(start+iterator < end){
+          dataSet.push({val1: start+(iterator*factor)});
+          iterator+=1;
+       }
+    }
+
+  ;
+//
+// var customFunctionCodeTemplate = function (start,end,modulo){
+//   var iterator=0;
+//   while(start+iterator < end){
+//     for(i=start;i<end;i++)
+//       if(i!=iterator)
+//         dataSet.push({val1: (start+iterator),
+//           val2: (start+i)
+//         })
+//     iterator+=1;
+//   }
+// }
 
 $('#customFunction').val(customFunctionCodeTemplate.toString())
 $('#generateBtn').on('click',generateData);

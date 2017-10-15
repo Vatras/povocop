@@ -33,9 +33,7 @@ const ComputationConfig = sequelize.define('ComputationConfig', {
 Result.belongsTo(InputData, {as: 'InputData'});
 ComputationConfig.belongsTo(Result, {as: 'LastApprovedResult'});
 function createTable(resolve){
-    Result.sync();
-    InputData.sync()
-    ComputationConfig.sync().then(()=>{
+    InputData.sync().then(()=>Result.sync()).then(()=>ComputationConfig.sync()).then(()=>{
         resolve();
     })
 }
@@ -116,7 +114,16 @@ function insertInputData(data,appName,cb){
 function getConfigData(appName,cb){
     const getOne = appName;
     if(getOne){
-        ComputationConfig.findOne({where : {appName : appName}}
+        ComputationConfig.findOne({where : {appName : appName},include: [{
+                model: Result,
+                as: 'LastApprovedResult',
+                include: [{
+                    model: InputData,
+                    as: 'InputData',
+                }]
+            }]
+                // attributes: ['appName', 'config','code','config','includesInputData','redundancyFactor']
+            }
         // ,{attributes: ['appName', 'config','code','config','includesInputData']}
         ).then(res => {
             res = res || {}

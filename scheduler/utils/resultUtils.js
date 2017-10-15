@@ -82,7 +82,7 @@ function approveResult(result,appName,STATE){
         DBUtils.setLatestResultToConfig(appName,dbResult,function(){
             if(STATE.config[appName].provideLastResultInConfig == true){
                 STATE.config[appName].lastApprovedResult = {result: dbResult.dataValues.result, inputData: dbResult.InputData ? dbResult.InputData.dataValues.data : null};
-                socketEventsEmitter.emit('newConfig');
+                socketEventsEmitter.emit('newConfig'+appName);
             }
             STATE.pendingResults[appName] = STATE.pendingResults[appName].filter(function(val){
                 return val.uuid != result.data.uuid

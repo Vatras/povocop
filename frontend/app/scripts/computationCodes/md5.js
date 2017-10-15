@@ -1,112 +1,74 @@
 /**
  * Created by Pjesek on 01.08.2017.
  */
+importScripts('https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/core.js')
+importScripts('https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/md5.js')
 var configuration;
-var bestCost=-1;
-var population = [];
-function generateRandomVector(count){
-  return new Array(count || 100)
-    .join().split(',')
-    .map(function(item, index){ return index;}).map(function(n){ return [Math.random(), n] })
-    .sort().map(function(n){ return n[1] });
-}
+function main(data){
+  var lastIdx=-1;
+  var found = false;
+  configuration.letters.forEach(function(letter4){
+    configuration.letters.forEach(function(letter5,idx){
+      configuration.letters.forEach(function(letter6){
+        configuration.letters.forEach(function(letter7){
+          // if(idx!=lastIdx){
+            var word = [data.letter1,data.letter2,data.letter3,letter4,letter5,letter6,letter7].join('');
 
-function createInitPopulation(populationCount,matrix){
-  return new Array(populationCount)
-    .join().split(',').map(function(item, index){
-      var cities = generateRandomVector();
-      return {cities: cities,score : getJourneyCost(cities,matrix)} ;
-
-    })
-}
-function getJourneyCost(vect,matrix){
-  var cost = 0;
-  for(var i=0;i<100-1;i++){
-    cost+=matrix[vect[i]][vect[i+1]];
-  }
-  if(bestCost==-1){
-    bestCost=cost;
-  }
-  if(cost<bestCost){
-    console.log('cost:', cost)
-    bestCost=cost;
-  }
-  return cost;
-}
-function mutate(bestGenes){
-  return bestGenes.map(function(item){
-    for(var i=0;i<configuration.mutationFactor;i++){
-      var idx1 = Math.floor(Math.random()*100);
-      var idx2 = Math.floor(Math.random()*100);
-      var city1 = item.cities[idx1];
-      item.cities[idx1] = item.cities[idx2];
-      item.cities[idx2] = city1
-    }
-    return item;
-  });
-}
-
-function crossover(populationMap,matrix){
-  function getMissingValues(input){
-    var missingValues = [];
-    var sortedInput = input.sort(function(a,b){return a-b});
-    var numToAppear=0;
-    for(var i=0;i<sortedInput.length;i++){
-      while(numToAppear<sortedInput[i]){
-        missingValues.push(numToAppear)
-        numToAppear++;
-      }
-      if (numToAppear != sortedInput[i] && numToAppear>sortedInput[i]){
-      }
-      else if(numToAppear == sortedInput[i]){numToAppear++}
-    }
-    if(i == sortedInput.length-1 && sortedInput[i]!=sortedInput.length-1){
-      missingValues.push(sortedInput.length-1)
-    }
-    return missingValues;
-  }
-  function getDuplicates(input){
-    return input.reduce(function(acc, el, i, arr) {
-      if (arr.indexOf(el) !== i && acc.indexOf(el) < 0) acc.push(el); return acc;
-    }, []);
-
-  }
-  function cross(arr1,arr2){
-    var division = Math.floor(Math.random()*100)
-    var slice = 5
-    var arr3 = arr1.slice(0,division).concat(arr2.slice(division,division+slice)).concat(arr1.slice(division+slice,100))
-    var duplicates = getDuplicates(arr3);
-    var missing = getMissingValues(arr3)
-    duplicates.forEach(function(val,idx){
-      arr3[arr3.indexOf(val)]=missing[idx]
+          if(CryptoJS.MD5(word).toString()==configuration.hashedValue){
+            self.postMessage({
+              results: word
+            });
+            found=true
+          }
+            // lastIdx = idx
+          // }
+          });
+        });
+      });
     });
-    if(arr3.indexOf(undefined)>-1){
-      arr3[arr3.indexOf(undefined)] = arr3.length-1;
-    }
-    return {cities: arr3, score : 999 || getJourneyCost(arr3,matrix)};
+  // setTimeout(main,1000);
+  //
+  // var i=0;
+  // while(i<200000000){
+  //   i+=1
+  // }
+  if(!found){
+    self.postMessage({
+      results: 'none'
+    });
   }
-  var randomSequence = generateRandomVector(populationMap.length);
-  for(var i=0;i<randomSequence.length;i+=2){
-    population.push(cross(populationMap[randomSequence[i]].cities,populationMap[randomSequence[i+1]].cities));
-    // population.push(cross(bestGenes));
-  }
-}
-function main(){
-  var matrix = configuration.matrix.map(function(val){return val});
-  var populationCount = configuration.populationCount;
-  population = population || [];
-  population = population.concat(createInitPopulation(populationCount,matrix));
 
-  var bestGenes = population.sort(function(a,b){ return a.score-b.score}).filter(function(val,idx){return idx < 20});
-
-  population = mutate(bestGenes);
-  population = crossover(population,matrix)
 
 }
 function onConfig(config,lastResult){
   configuration = config;
-  main();
 }
+
+
+// function customFunctionCodeTemplate(start,end,factor){
+//   var letters = new Array(26).join(',').split(',').map(function(value,index){ return String.fromCharCode(97+index)});
+//
+//   var iterator=0;
+//   while(start+iterator < end){
+//     letters.forEach(function(val,idx){
+//       letters.forEach(function(val2,idx2){
+//         dataSet.push({
+//           letter1: letters[iterator],
+//           letter2: letters[idx],
+//           letter3: letters[idx2]
+//         });
+//       });
+//     });
+//     iterator+=1;
+//   }
+// }
+
+
+
+
+
+
+
 
 
 

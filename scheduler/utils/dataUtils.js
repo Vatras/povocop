@@ -138,13 +138,14 @@ function getInputData(STATE,socket,numOfCpus){
     return toSend.length !== 0 ? toSend : null
 }
 function cacheMoreInputData(STATE,appName,numOfCpus){
-    if(STATE.cachedInputData[appName].length >= CONFIG.minimumCachedInputDataSize && STATE.cachedInputData[appName].length - numOfCpus < CONFIG.minimumCachedInputDataSize  ){
+    if(numOfCpus == 0 || STATE.cachedInputData[appName].length >= CONFIG.minimumCachedInputDataSize && STATE.cachedInputData[appName].length - numOfCpus < CONFIG.minimumCachedInputDataSize  ){
         console.log('caching more data');
         DBUtils.getInputData(appName, function (res) {
+            res = res.map(val =>val.dataValues || val);
             const idsArray = STATE.cachedInputData[appName].map(val =>val.id);
             const fetchedData = res.filter (value => idsArray.indexOf(value.id) == -1);
-            STATE.cachedInputData[appName] = STATE.cachedInputData[appName].concat(fetchedData);
-        },{limit : CONFIG.cachedInputDataSize - CONFIG.minimumCachedInputDataSize});
+            STATE.cachedInputData[appName] = fetchedData.concat(STATE.cachedInputData[appName]);
+        },{limit : CONFIG.cachedInputDataSize - STATE.cachedInputData[appName].length});
     }
 
 }
@@ -177,6 +178,7 @@ function removeAssignment(socket, result,dbResult,connectedInputData){
     socket.inputData[workerNum] = null;
 }
 module.exports = {
+    cacheMoreInputData : cacheMoreInputData,
     init: init,
     getInputData : getInputData,
     removeAssignment : removeAssignment,
