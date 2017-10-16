@@ -141,11 +141,10 @@ function povocopOnclick(event){
   }
 
   function initSocketIO() {
-    // setCookie('povocopusername','Vatras')
     var appName = document.getElementById("povocopscript")
       && document.getElementById("povocopscript").getAttribute("appName");
-    var schedulerIP = document.getElementById("povocopscheduler")
-        && document.getElementById("povocopscheduler").getAttribute("povocopscheduler");
+    var schedulerIP = document.getElementById("povocopscript")
+        && document.getElementById("povocopscript").getAttribute("povocopscheduler");
     appName = appName || 'random'
     socket = io(schedulerIP? 'http://'+schedulerIP : window.location.hostname+':9000/'+appName,{
       query:{

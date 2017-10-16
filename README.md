@@ -16,17 +16,18 @@ $ docker run -dti --name povocop --link postgres:pg_ip -v ~/logs:/var/logs -p 90
 -e "minimumCachedInputDataSize=130" \
 pjesek/povocop:scheduler
 ```
->App will run on http://127.0.0.1:9000
+App will run on
+>http://127.0.0.1:9000
 
->url to a view to submit code and set configuration to a "job"
+url to a view to submit code and set configuration to a "job"
 >/manager/config/:jobName
 
->url to a view to submit input data to a "job"
+url to a view to submit input data to a "job"
 >/manager/data/:jobName
 
 
 This platform was created by Tomek F as the master thesis at Poznan Univeristy of Technology in 2017.
-
+All the details about the process of code and data distribution, rewarding etc is described in my master thesis attached inside the repo (including 3 examples in the 6th chapter) [master thesis](https://github.com/vatras/povocop/Master_thesis.pdf)
 
 
 
