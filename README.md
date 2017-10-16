@@ -27,7 +27,8 @@ url to a view to submit input data to a "job"
 
 
 This platform was created by Tomek F as the master thesis at Poznan Univeristy of Technology in 2017.
-All the details about the process of code and data distribution, rewarding etc is described in my master thesis attached inside the repo (including 3 examples in the 6th chapter) [master thesis](https://github.com/vatras/povocop/Master_thesis.pdf)
+All the details about the process of code and data distribution, rewarding etc is described in my master thesis attached inside the repo
+(including 3 examples in the 6th chapter) [master thesis](https://github.com/Vatras/povocop/blob/master/Master_thesis.pdf)
 
 
 
